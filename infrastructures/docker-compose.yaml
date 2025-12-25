@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. Database Utama: MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: eco_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+  # 2. Database Audit: Cassandra
+  cassandra:
+    image: cassandra:latest
+    container_name: eco_cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=EcoCluster
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  # 3. Web GUI untuk MongoDB biar gampang cek data
+  mongo-express:
+    image: mongo-express
+    container_name: eco_mongo_gui
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo_data:
+  cassandra_data:

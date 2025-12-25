@@ -1,0 +1,16 @@
+# folder virtual environment Python
+infrastructures/venv/
+infrastructures/env/
+__pycache__/
+
+# file sampah Mac/Windows
+.DS_Store
+Thumbs.db
+
+# file IDE
+.vscode/
+.idea/
+
+# data database
+infrastructures/mongo_data/
+infrastructures/cassandra_data/
