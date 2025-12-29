@@ -3,21 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, Download, CheckCircle2, Calendar, Loader2 } from "lucide-react"
+import { Search, Download, CheckCircle2, Calendar, Loader2, FileText } from "lucide-react"
 import { useState, useEffect } from "react"
 import { apiClient, ActivityResponse } from "@/lib/api-client"
+import { generateActivityPDF } from "@/lib/pdf-generator"
 import { useToast } from "@/hooks/use-toast"
 
 export default function RiwayatPage() {
   const [activities, setActivities] = useState<ActivityResponse[]>([])
+  const [allActivities, setAllActivities] = useState<ActivityResponse[]>([]) // For PDF export
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [total, setTotal] = useState(0)
   const { toast } = useToast()
-
+  
   const PAGE_SIZE = 10
+  const USER_ID = "user123" // TODO: Replace with actual user ID
 
   useEffect(() => {
     loadActivities()
@@ -27,7 +31,7 @@ export default function RiwayatPage() {
     setLoading(true)
     try {
       const result = await apiClient.getActivities({
-        user_id: "user123", // TODO: Replace with actual user ID
+        user_id: USER_ID,
         page: page,
         page_size: PAGE_SIZE,
       })
@@ -58,6 +62,74 @@ export default function RiwayatPage() {
       setActivities(filtered)
     } else {
       loadActivities()
+    }
+  }
+
+  const handleExportPDF = async () => {
+    setExporting(true)
+    try {
+      toast({
+        title: "Memuat data...",
+        description: "Mengambil semua aktivitas untuk export PDF",
+      })
+
+      // Load all activities with pagination (max 100 per request)
+      let allActivitiesForExport: ActivityResponse[] = []
+      let currentPage = 1
+      const pageSize = 100 // Max allowed by backend
+      let hasMore = true
+
+      while (hasMore) {
+        const result = await apiClient.getActivities({
+          user_id: USER_ID,
+          page: currentPage,
+          page_size: pageSize,
+        })
+
+        allActivitiesForExport = [...allActivitiesForExport, ...result.activities]
+        
+        // Check if there are more pages
+        hasMore = result.activities.length === pageSize && currentPage * pageSize < result.total
+        currentPage++
+
+        // Safety limit to prevent infinite loop
+        if (currentPage > 50) break
+      }
+
+      if (allActivitiesForExport.length === 0) {
+        toast({
+          title: "Tidak ada data",
+          description: "Belum ada aktivitas untuk diexport",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const totalEmission = allActivitiesForExport.reduce(
+        (sum, activity) => sum + activity.emission, 
+        0
+      )
+
+      // Generate PDF
+      const filename = generateActivityPDF({
+        activities: allActivitiesForExport,
+        totalEmission,
+        userId: USER_ID,
+        dateRange: `Total ${allActivitiesForExport.length} aktivitas`
+      })
+
+      toast({
+        title: "Export Berhasil! 🎉",
+        description: `File ${filename} telah didownload`,
+      })
+    } catch (error: any) {
+      toast({
+        title: "Export Gagal",
+        description: error.message || "Terjadi kesalahan saat export PDF",
+        variant: "destructive",
+      })
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -101,9 +173,23 @@ export default function RiwayatPage() {
             Semua catatan emisi karbon Anda yang telah terverifikasi dengan hash chain.
           </p>
         </div>
-        <Button variant="outline" className="gap-2 bg-transparent" disabled>
-          <Download className="h-4 w-4" />
-          Ekspor Laporan
+        <Button 
+          variant="outline" 
+          className="gap-2 bg-transparent"
+          onClick={handleExportPDF}
+          disabled={exporting || loading || total === 0}
+        >
+          {exporting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Mengexport...
+            </>
+          ) : (
+            <>
+              <FileText className="h-4 w-4" />
+              Ekspor Laporan PDF
+            </>
+          )}
         </Button>
       </div>
 
