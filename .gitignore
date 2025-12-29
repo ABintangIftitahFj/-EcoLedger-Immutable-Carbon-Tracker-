@@ -1,7 +1,15 @@
 # folder virtual environment Python
 infrastructures/venv/
 infrastructures/env/
+venv/
+env/
 __pycache__/
+
+# Environment variables (SENSITIVE!)
+.env
+.env.local
+.env.*.local
+env
 
 # file sampah Mac/Windows
 .DS_Store

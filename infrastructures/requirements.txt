@@ -1,1 +1,24 @@
-pymongo
+# FastAPI and Server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# MongoDB Drivers
+motor==3.3.2      # Async driver for FastAPI backend
+pymongo==4.6.1    # Sync driver for init_db.py script
+
+# Pydantic for validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# HTTP Client for Climatiq API
+httpx==0.26.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# File upload support
+python-multipart==0.0.6
+
+# Additional utilities
+python-jose[cryptography]==3.3.0  # For JWT (future auth)
+passlib[bcrypt]==1.7.4  # For password hashing (future auth)

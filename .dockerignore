@@ -1,0 +1,53 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+env
+
+# Git
+.git
+.gitignore
+
+# Virtual environments
+venv/
+env/
+infrastructures/venv/
+infrastructures/env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Database data (should not be in Docker image)
+infrastructures/mongo_data/
+infrastructures/cassandra_data/
+
+# Documentation
+README.md
+*.md
+
+# Test files
+tests/
+*.test.js
+*.spec.js
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
