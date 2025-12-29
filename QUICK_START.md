@@ -1,295 +1,172 @@
-# 🚀 EcoLedger Backend - Quick Start Guide
+# 🚀 Quick Start Guide - EcoLedger
 
-## Prerequisites
+Panduan singkat untuk menjalankan aplikasi EcoLedger.
 
-- Python 3.10 or higher
-- Anaconda/Miniconda (or Python venv)
-- Docker and Docker Compose
-- Climatiq API key ([Get one here](https://www.climatiq.io/))
+## ⚡ Cara Tercepat
 
----
-
-## Step 1: Setup Docker Containers
-
-Navigate to the infrastructures folder and start Docker services:
-
+### 1. Start MongoDB (jika menggunakan Docker)
 ```bash
 cd infrastructures
 docker-compose up -d
 ```
 
-This will start:
-- **MongoDB** on port 27017
-- **Cassandra** on port 9042
-- **Mongo Express** (MongoDB GUI) on port 8081
-
----
-
-## Step 2: Create Conda Environment
-
+### 2. Jalankan Aplikasi dengan Script
 ```bash
-# Create environment
-conda create -n ecoledger python=3.11 -y
-
-# Activate environment
-conda activate ecoledger
+./start.sh
 ```
 
----
+Script akan otomatis:
+- ✅ Cek MongoDB
+- ✅ Setup virtual environment Python
+- ✅ Install dependencies
+- ✅ Start backend (port 8000)
+- ✅ Start frontend (port 3000)
 
-## Step 3: Install Dependencies
+## 🔧 Manual Setup (Alternatif)
 
+### Backend
 ```bash
-# Install Python dependencies
-pip install -r infrastructures/requirements.txt
-```
-
----
-
-## Step 4: Initialize Databases
-
-```bash
-# Initialize MongoDB
-python infrastructures/init_db.py
-
-# Initialize Cassandra (wait 30 seconds for Cassandra to be ready)
-docker exec -i eco_cassandra cqlsh < infrastructures/cassandra_schema.cql
-```
-
----
-
-## Step 5: Configure Environment Variables
-
-Edit the `.env` file in the root directory:
-
-```bash
-# REQUIRED: Add your Climatiq API key
-CLIMATIQ_API_KEY=your_actual_api_key_here
-
-# REQUIRED: Add a secret key (generate random string)
-SECRET_KEY=your_random_secret_key_here
-
-# Optional: Modify other settings as needed
-```
-
-**Get Climatiq API Key:**
-1. Sign up at https://www.climatiq.io/
-2. Go to Dashboard → API Keys
-3. Copy your API key
-4. Paste it in `.env`
-
----
-
-## Step 6: Run the Backend
-
-```bash
-# Navigate to backend folder
 cd backend
-
-# Run with uvicorn
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r ../infrastructures/requirements.txt
+python app.py
 ```
 
-**Output should show:**
-```
-INFO:     Started server process
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
-
----
-
-## Step 7: Test the API
-
-### Option 1: Swagger UI (Recommended)
-
-Open your browser and go to:
-```
-http://localhost:8000/docs
+### Frontend (Terminal baru)
+```bash
+cd frontend-EcoLedger
+pnpm install  # atau npm install
+pnpm dev      # atau npm run dev
 ```
 
-You'll see interactive API documentation where you can test all endpoints!
+## 🌐 URLs
 
-### Option 2: curl Command
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs (Swagger)**: http://localhost:8000/docs
+- **API Docs (ReDoc)**: http://localhost:8000/redoc
+
+## ✅ Test Koneksi
 
 ```bash
-# Health check
+# Test backend health
 curl http://localhost:8000/api/health
 
-# Get available activity types
-curl http://localhost:8000/api/activity-types
+# Test frontend
+open http://localhost:3000/dashboard
+```
 
-# Estimate emission
-curl -X POST "http://localhost:8000/api/estimate" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activity_type": "car_petrol_medium",
-    "distance_km": 10
-  }'
+## 🧪 Test API dengan cURL
 
-# Create activity
-curl -X POST "http://localhost:8000/api/activities" \
+### Create Activity
+```bash
+curl -X POST http://localhost:8000/api/activities \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user123",
     "activity_type": "car_petrol_medium",
     "distance_km": 25.5,
-    "description": "Commute to office"
+    "description": "Test perjalanan"
   }'
+```
 
-# Get activities
-curl "http://localhost:8000/api/activities?user_id=user123"
+### Get Activities
+```bash
+curl http://localhost:8000/api/activities?user_id=user123
+```
 
-# Verify hash chain
+### Get Activity Types
+```bash
+curl http://localhost:8000/api/activity-types
+```
+
+### Estimate Emission (Preview)
+```bash
+curl -X POST http://localhost:8000/api/estimate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activity_type": "motorbike",
+    "distance_km": 10
+  }'
+```
+
+### Verify Hash Chain
+```bash
 curl http://localhost:8000/api/verify-chain
 ```
 
----
+## 📱 Penggunaan Frontend
 
-## Common Issues & Solutions
+1. **Buka Dashboard**: http://localhost:3000/dashboard
+2. **Catat Aktivitas**: Klik tombol "Catat Aktivitas"
+3. **Pilih Tipe**: Pilih transportasi atau energi
+4. **Input Data**: Masukkan jarak (km) atau energi (kWh)
+5. **Estimasi** (opsional): Klik "Hitung Estimasi" untuk preview
+6. **Simpan**: Klik "Simpan Aktivitas"
+7. **Lihat Riwayat**: Navigasi ke menu "Riwayat"
 
-### Issue 1: "Connection refused" to MongoDB
+## 🔑 API Key Climatiq
 
-**Solution:** Make sure Docker containers are running:
-```bash
-docker ps
+API key sudah dikonfigurasi di file `.env`:
+```
+CLIMATIQ_API_KEY=TTSM3C38BS3E7A28K0FY7Y94Q4
 ```
 
-If not running:
+## 🐛 Troubleshooting Cepat
+
+### MongoDB tidak running
 ```bash
+# Gunakan Docker
 cd infrastructures
 docker-compose up -d
+
+# Atau install MongoDB lokal
+brew install mongodb-community  # macOS
 ```
 
-### Issue 2: "Climatiq API error: 401 Unauthorized"
-
-**Solution:** Check your API key in `.env` file:
-- Make sure `CLIMATIQ_API_KEY` is set correctly
-- No quotes around the key
-- No extra spaces
-
-### Issue 3: "Module not found" errors
-
-**Solution:** Make sure you're in the right directory and environment:
+### Port sudah digunakan
 ```bash
-# Check if in conda environment
-conda env list  # Should show * next to ecoledger
+# Kill process di port 8000
+lsof -ti:8000 | xargs kill -9
 
-# If not, activate it
-conda activate ecoledger
-
-# Reinstall dependencies
-pip install -r infrastructures/requirements.txt
+# Kill process di port 3000
+lsof -ti:3000 | xargs kill -9
 ```
 
-### Issue 4: Port already in use
-
-**Solution:** Change the port in `app.py` or `.env`:
-```python
-# In .env
-APP_PORT=8001
-```
-
-Then run:
+### Backend error "Module not found"
 ```bash
-uvicorn app:app --reload --host 0.0.0.0 --port 8001
+cd backend
+source venv/bin/activate
+pip install -r ../infrastructures/requirements.txt
 ```
 
----
-
-## Viewing Data
-
-### MongoDB (via Mongo Express)
-
-Open browser: http://localhost:8081
-
-Navigate to: `eco_ledger_db` → `activity_logs`
-
-### MongoDB (via CLI)
-
+### Frontend error "Cannot find module"
 ```bash
-docker exec -it eco_mongo mongosh
-use eco_ledger_db
-db.activity_logs.find().pretty()
+cd frontend-EcoLedger
+rm -rf node_modules package-lock.json
+pnpm install
 ```
+
+## 📊 Contoh Data Test
+
+### Transportasi
+- Mobil bensin medium, 25.5 km → ~5.88 kg CO2e
+- Motor, 10 km → ~1.23 kg CO2e
+- Bus, 15 km → ~0.95 kg CO2e
+
+### Energi
+- Listrik Indonesia, 150 kWh → ~90-120 kg CO2e
+
+## 🎯 Next Steps
+
+Setelah aplikasi berjalan:
+1. ✅ Test create activity di frontend
+2. ✅ Lihat di dashboard apakah data muncul
+3. ✅ Cek riwayat aktivitas
+4. ✅ Test estimasi emisi
+5. ✅ Verifikasi hash chain
 
 ---
 
-## Stopping the Application
-
-### Stop Backend
-Press `Ctrl+C` in the terminal running uvicorn
-
-### Stop Docker Containers
-```bash
-cd infrastructures
-docker-compose down
-```
-
-### Deactivate Conda Environment
-```bash
-conda deactivate
-```
-
----
-
-## Next Steps
-
-1. **Build Frontend**: Create a React/Vue/Angular frontend that consumes this API
-2. **Add Authentication**: Implement JWT authentication for secure access
-3. **Add Cassandra Audit Logging**: Log all changes to Cassandra for audit trail
-4. **Deploy to Production**: Deploy to AWS/GCP/Azure with proper environment variables
-
----
-
-## Directory Structure
-
-```
-EcoLedger-Immutable-Carbon-Tracker/
-├── backend/
-│   ├── app.py                    # Main FastAPI application
-│   ├── models.py                 # Pydantic models
-│   ├── config.py                 # Configuration
-│   ├── database.py               # MongoDB connection
-│   ├── climatiq_service.py       # Climatiq API client
-│   ├── activity_mapper.py        # Activity type mapper
-│   ├── hashing.py                # Hash generation
-│   └── API_DOCUMENTATION.md      # API docs
-├── infrastructures/
-│   ├── docker-compose.yaml       # Docker services
-│   ├── init_db.py                # MongoDB init script
-│   ├── cassandra_schema.cql      # Cassandra schema
-│   └── requirements.txt          # Python dependencies
-├── .env                          # Environment variables (SECRET!)
-├── .env.example                  # Example env file
-└── README.md                     # Project overview
-```
-
----
-
-## API Endpoints Summary
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
-| POST | `/api/activities` | Create activity |
-| GET | `/api/activities` | Get activities (paginated) |
-| GET | `/api/activities/{id}` | Get specific activity |
-| POST | `/api/estimate` | Estimate emission (no save) |
-| GET | `/api/verify-chain` | Verify hash chain |
-| GET | `/api/activity-types` | Get available activity types |
-| GET | `/api/emission-factors/search` | Search Climatiq database |
-| GET | `/docs` | Swagger UI |
-| GET | `/redoc` | ReDoc documentation |
-
----
-
-## Support
-
-For issues or questions, check:
-- **Swagger UI**: http://localhost:8000/docs
-- **API Documentation**: `backend/API_DOCUMENTATION.md`
-- **Climatiq Docs**: https://docs.climatiq.io/
-
-Happy coding! 🌍💚
+**Need Help?** Lihat `README.md` untuk dokumentasi lengkap.

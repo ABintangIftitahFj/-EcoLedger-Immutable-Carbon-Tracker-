@@ -1,24 +1,53 @@
-# folder virtual environment Python
-infrastructures/venv/
-infrastructures/env/
-venv/
-env/
-__pycache__/
+# Python
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 
-# Environment variables (SENSITIVE!)
-.env
-.env.local
-.env.*.local
-env
+# Node.js
+frontend-EcoLedger/node_modules/
+frontend-EcoLedger/.next/
+frontend-EcoLedger/out/
+frontend-EcoLedger/.turbo/
 
-# file sampah Mac/Windows
-.DS_Store
-Thumbs.db
+# Environment variables - DICOMMENT karena tim butuh file ini!
+# .env
+# .env.local
+# .env.*.local
 
-# file IDE
-.vscode/
-.idea/
-
-# data database
+# Database data (jangan push data mentah)
 infrastructures/mongo_data/
 infrastructures/cassandra_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
