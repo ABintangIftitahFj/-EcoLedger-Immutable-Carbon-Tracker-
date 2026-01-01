@@ -1,3 +1,30 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Ignore Docker-related local data
+infrastructures/mongo_data/
+infrastructures/cassandra_data/
 # Python
 backend/venv/
 backend/__pycache__/
