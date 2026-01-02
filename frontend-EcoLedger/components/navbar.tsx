@@ -93,6 +93,9 @@ export function Navbar() {
           <Link href="/ledger" className="text-sm font-medium transition-colors hover:text-primary">
             Buku Besar Publik
           </Link>
+          <Link href="/global-emissions" className="text-sm font-medium transition-colors hover:text-primary">
+            🌍 Global Emissions
+          </Link>
           <Link href="/tentang" className="text-sm font-medium transition-colors hover:text-primary">
             Tentang Kami
           </Link>

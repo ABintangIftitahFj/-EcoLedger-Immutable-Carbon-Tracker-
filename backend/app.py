@@ -73,6 +73,7 @@ from auth import (
     TokenData
 )
 from cassandra_service import log_audit, get_audit_logs, get_audit_stats
+from climate_trace_service import climate_trace_service
 
 # =============================================================================
 # KONFIGURASI LOGGING
@@ -548,6 +549,174 @@ async def get_audit_statistics(
         return stats
     except Exception as e:
         logger.error(f"Error get audit stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+# =============================================================================
+# ENDPOINT: CLIMATE TRACE (Global Emissions Data)
+# =============================================================================
+# Integrasi dengan Climate TRACE API untuk data emisi global
+
+@app.get(
+    "/api/climate-trace/countries",
+    tags=["Climate TRACE"],
+    summary="Get list of countries"
+)
+async def get_climate_trace_countries():
+    """Get list of all countries from Climate TRACE."""
+    try:
+        countries = await climate_trace_service.get_countries()
+        return {"countries": countries}
+    except Exception as e:
+        logger.error(f"Error get countries: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get(
+    "/api/climate-trace/sectors",
+    tags=["Climate TRACE"],
+    summary="Get list of emission sectors"
+)
+async def get_climate_trace_sectors():
+    """Get list of emission sectors."""
+    try:
+        sectors = await climate_trace_service.get_sectors()
+        return {"sectors": sectors}
+    except Exception as e:
+        logger.error(f"Error get sectors: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get(
+    "/api/climate-trace/rankings/countries",
+    tags=["Climate TRACE"],
+    summary="Get country emissions rankings"
+)
+async def get_country_rankings(
+    gas: str = Query("co2e_100yr", description="Gas type"),
+    year: int = Query(None, description="Year (default: previous year)"),
+    continent: str = Query(None, description="Filter by continent")
+):
+    """
+    Get ranking of countries by emissions.
+    
+    Returns top polluting countries with their emission data.
+    """
+    try:
+        start = str(year) if year else None
+        end = str(year) if year else None
+        
+        data = await climate_trace_service.get_country_rankings(
+            gas=gas,
+            start=start,
+            end=end,
+            continent=continent
+        )
+        return data
+    except Exception as e:
+        logger.error(f"Error get country rankings: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get(
+    "/api/climate-trace/sources",
+    tags=["Climate TRACE"],
+    summary="Get top emission sources (polluters)"
+)
+async def get_emission_sources(
+    year: int = Query(None, description="Emissions year"),
+    gas: str = Query("co2e_100yr", description="Gas type"),
+    sector: str = Query(None, description="Filter by sector"),
+    country: str = Query(None, description="ISO3 country code (e.g., IDN)"),
+    limit: int = Query(50, ge=1, le=100, description="Max results"),
+    offset: int = Query(0, ge=0, description="Pagination offset")
+):
+    """
+    Get top emission sources (facilities/assets).
+    
+    Shows largest polluters globally or filtered by country/sector.
+    """
+    try:
+        sectors = [sector] if sector else None
+        
+        sources = await climate_trace_service.get_sources(
+            year=year,
+            gas=gas,
+            sectors=sectors,
+            country=country,
+            limit=limit,
+            offset=offset
+        )
+        return {
+            "sources": sources,
+            "count": len(sources),
+            "filters": {
+                "year": year,
+                "gas": gas,
+                "sector": sector,
+                "country": country
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error get emission sources: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get(
+    "/api/climate-trace/sources/{source_id}",
+    tags=["Climate TRACE"],
+    summary="Get emission source details"
+)
+async def get_source_details(
+    source_id: int,
+    gas: str = Query("co2e_100yr", description="Gas type")
+):
+    """
+    Get detailed info about a specific emission source.
+    
+    Includes emissions timeseries data.
+    """
+    try:
+        details = await climate_trace_service.get_source_details(
+            source_id=source_id,
+            gas=gas
+        )
+        return details
+    except Exception as e:
+        logger.error(f"Error get source details: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get(
+    "/api/climate-trace/indonesia",
+    tags=["Climate TRACE"],
+    summary="Get Indonesia emissions data"
+)
+async def get_indonesia_emissions(
+    year: int = Query(None, description="Year"),
+    limit: int = Query(20, description="Max results")
+):
+    """
+    Get Indonesia's emission data and top polluters.
+    
+    Convenience endpoint for Indonesia-specific data.
+    """
+    try:
+        # Get Indonesia sources
+        sources = await climate_trace_service.get_sources(
+            year=year,
+            country="IDN",
+            limit=limit
+        )
+        
+        return {
+            "country": "Indonesia",
+            "country_code": "IDN",
+            "top_sources": sources,
+            "source_count": len(sources)
+        }
+    except Exception as e:
+        logger.error(f"Error get Indonesia emissions: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
