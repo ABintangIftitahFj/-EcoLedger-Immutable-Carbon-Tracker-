@@ -1,4 +1,5 @@
 "use client"
+export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, TrendingDown, Leaf, ShieldCheck, Bell, ArrowUpRight, Loader2 } from "lucide-react"
@@ -6,6 +7,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { apiClient, ActivityResponse, HashVerificationResponse } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
+import { EcoAssistant } from "@/components/eco-assistant"
 
 export default function Dashboard() {
   const [activities, setActivities] = useState<ActivityResponse[]>([])
@@ -61,7 +63,7 @@ export default function Dashboard() {
       {/* Welcome and Notification Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Halo, Selamat Datang Kembali</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Halo, Eco AI Aktif! 🚀</h1>
           <p className="text-muted-foreground">Berikut adalah ringkasan jejak karbon Anda saat ini.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -192,37 +194,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Laporan & Wawasan</CardTitle>
-            <CardDescription>Analisis tren emisi dan rekomendasi pengurangan jejak karbon.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <h4 className="font-bold text-sm mb-1">Rekomendasi Minggu Ini</h4>
-              <p className="text-sm text-muted-foreground">
-                Beralih ke penyedia energi terbarukan dapat mengurangi emisi listrik Anda hingga 40%.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total Aktivitas</span>
-                <span className="font-medium">{activities.length} Aktivitas</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Rata-rata per Aktivitas</span>
-                <span className="font-medium">
-                  {activities.length > 0 ? (totalEmission / activities.length).toFixed(2) : "0.00"} kg CO2e
-                </span>
-              </div>
-            </div>
-            <Link href="/dashboard/riwayat">
-              <Button variant="outline" className="w-full bg-transparent">
-                Lihat Analisis Lengkap
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <EcoAssistant />
       </div>
     </div>
   )

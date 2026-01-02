@@ -30,6 +30,7 @@ export function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("access_token")
     localStorage.removeItem("user")
+    apiClient.setAuthToken(null)
     setUser(null)
     router.push("/")
   }

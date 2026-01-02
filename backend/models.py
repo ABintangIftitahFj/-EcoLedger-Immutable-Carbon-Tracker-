@@ -119,9 +119,9 @@ class ActivityCreate(BaseModel):
     
     Digunakan pada endpoint POST /api/activities untuk menerima
     data aktivitas dari user. Semua field di-validasi secara otomatis.
+    User ID diambil dari token autentikasi, tidak perlu dikirim di request.
     
     Attributes:
-        user_id: ID unik pengguna (wajib diisi)
         activity_type: Jenis aktivitas sesuai mapping Climatiq (wajib)
         distance_km: Jarak tempuh dalam kilometer (untuk transportasi)
         energy_kwh: Konsumsi energi dalam kWh (untuk listrik)
@@ -131,7 +131,6 @@ class ActivityCreate(BaseModel):
     
     Example:
         {
-            "user_id": "user123",
             "activity_type": "car",
             "distance_km": 25.5,
             "description": "Perjalanan ke kantor"
@@ -139,11 +138,6 @@ class ActivityCreate(BaseModel):
     """
     
     # === FIELD WAJIB ===
-    user_id: str = Field(
-        ...,  # "..." artinya field ini WAJIB diisi
-        description="ID unik pengguna yang mencatat aktivitas"
-    )
-    
     activity_type: str = Field(
         ...,
         description="Jenis aktivitas (contoh: 'car', 'motorbike', 'bus')"

@@ -74,6 +74,7 @@ from auth import (
 )
 from cassandra_service import log_audit, get_audit_logs, get_audit_stats
 from climate_trace_service import climate_trace_service
+from genai_service import gen_ai_service
 
 # =============================================================================
 # KONFIGURASI LOGGING
@@ -721,6 +722,64 @@ async def get_indonesia_emissions(
 
 
 # =============================================================================
+# ENDPOINT: AI ASSISTANT (Gemini)
+# =============================================================================
+
+@app.post(
+    "/api/ai/tips",
+    tags=["AI Assistant"],
+    summary="Get personalized eco-tips from AI"
+)
+async def get_ai_tips(
+    current_user: TokenData = Depends(get_current_active_user)
+):
+    """
+    Generate personalized sustainability tips using Google Gemini AI.
+    Analyzes user's recent activities to provide relevant advice.
+    """
+    logger.info(f"AI Tips requested for user: {current_user.email}")
+    try:
+        db = await get_db()
+        activities_collection = db["activity_logs"]
+        
+        # Ambil 5 aktivitas terbaru user
+        activities_cursor = activities_collection.find(
+            {"user_id": current_user.user_id}
+        ).sort("timestamp", -1).limit(5)
+        
+        activities = await activities_cursor.to_list(length=5)
+        
+        if not activities:
+            summary = "User belum memiliki catatan aktivitas emisi karbon."
+        else:
+            summary = "Aktivitas terbaru:\n"
+            for act in activities:
+                summary += f"- {act.get('activity_type')}: {act.get('emission')} {act.get('emission_unit', 'kg CO2e')} pada {act.get('timestamp')}\n"
+        
+        # Generate tips menggunakan Gemini
+        tips = await gen_ai_service.generate_carbon_tips(summary)
+        
+        # Log audit ke Cassandra
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="AI_TIPS",
+            entity="ai_assistant",
+            description=f"User {current_user.email} mendapatkan tips AI"
+        )
+        
+        return {
+            "user": current_user.email,
+            "tips": tips
+        }
+    except Exception as e:
+        logger.error(f"Error getting AI tips: {e}", exc_info=True)
+        return {
+            "user": current_user.email,
+            "tips": "Maaf, Eco-Assistant sedang mengalami kendala teknis. Silakan coba lagi nanti."
+        }
+
+
+# =============================================================================
 # ENDPOINT: HEALTH CHECK
 # =============================================================================
 
@@ -789,7 +848,10 @@ async def health_check():
     tags=["Aktivitas"],
     summary="Buat aktivitas baru dengan kalkulasi emisi otomatis"
 )
-async def create_activity(activity: ActivityCreate):
+async def create_activity(
+    activity: ActivityCreate,
+    current_user: TokenData = Depends(get_current_active_user)
+):
     """
     Membuat aktivitas karbon baru dengan kalkulasi emisi otomatis.
     
@@ -826,7 +888,7 @@ async def create_activity(activity: ActivityCreate):
                        f"Gunakan /api/activity-types untuk melihat daftar yang tersedia."
             )
         
-        logger.info(f"Membuat aktivitas untuk user {activity.user_id}")
+        logger.info(f"Membuat aktivitas untuk user {current_user.user_id}")
         
         # =====================================================================
         # STEP 2: Hitung emisi menggunakan Climatiq API
@@ -872,7 +934,7 @@ async def create_activity(activity: ActivityCreate):
         # Generate hash untuk record ini
         current_hash = generate_hash(
             prev_hash,
-            activity.user_id,
+            current_user.user_id,
             activity.activity_type,
             emission,
             now_str
@@ -882,7 +944,7 @@ async def create_activity(activity: ActivityCreate):
         # STEP 4: Simpan ke MongoDB
         # =====================================================================
         new_doc = {
-            "user_id": activity.user_id,
+            "user_id": current_user.user_id,
             "activity_type": activity.activity_type,
             "emission": emission,
             "emission_unit": "kg CO2e",

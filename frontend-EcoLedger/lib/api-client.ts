@@ -143,6 +143,16 @@ class ApiClient {
     const query = queryParams.toString();
     return this.request<any>(`/api/emission-factors/search${query ? `?${query}` : ''}`);
   }
+
+  // =========================================================================
+  // AI ASSISTANT
+  // =========================================================================
+
+  async getAiTips() {
+    return this.request<{ user: string; tips: string }>('/api/ai/tips', {
+      method: 'POST',
+    });
+  }
 }
 
 // =============================================================================
@@ -266,3 +276,11 @@ export interface ActivityTypesResponse {
 
 // Export singleton instance
 export const apiClient = new ApiClient(API_BASE_URL);
+
+// Auto-restore token from localStorage if in browser
+if (typeof window !== 'undefined') {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    apiClient.setAuthToken(token);
+  }
+}
