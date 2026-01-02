@@ -367,6 +367,104 @@ async def get_me(current_user: TokenData = Depends(get_current_user)):
 
 
 # =============================================================================
+# ENDPOINT: ADMIN - USER MANAGEMENT
+# =============================================================================
+
+@app.get(
+    "/api/admin/users",
+    tags=["Admin"],
+    summary="Lihat semua users (Admin only)"
+)
+async def get_all_users(
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Mendapatkan daftar semua user yang terdaftar.
+    
+    Hanya admin yang bisa mengakses endpoint ini.
+    
+    Returns:
+        List of users (tanpa password)
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        
+        # Get all users
+        users_cursor = users_collection.find({})
+        users_list = []
+        
+        async for user in users_cursor:
+            users_list.append({
+                "id": str(user["_id"]),
+                "email": user["email"],
+                "name": user["name"],
+                "role": user["role"],
+                "created_at": user.get("created_at", "")
+            })
+        
+        logger.info(f"Admin {current_user.email} mengakses daftar users ({len(users_list)} users)")
+        
+        return {
+            "total": len(users_list),
+            "users": users_list
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error get all users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.get(
+    "/api/admin/stats",
+    tags=["Admin"],
+    summary="Statistik admin (Admin only)"
+)
+async def get_admin_stats(
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Mendapatkan statistik untuk dashboard admin.
+    
+    Returns:
+        total_users, total_activities, total_emission
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        activities_collection = db["activity_logs"]
+        
+        # Count users
+        total_users = await users_collection.count_documents({})
+        
+        # Count activities
+        total_activities = await activities_collection.count_documents({})
+        
+        # Sum emissions
+        pipeline = [
+            {"$group": {"_id": None, "total": {"$sum": "$emission"}}}
+        ]
+        result = await activities_collection.aggregate(pipeline).to_list(1)
+        total_emission = result[0]["total"] if result else 0
+        
+        logger.info(f"Admin {current_user.email} mengakses statistik")
+        
+        return {
+            "total_users": total_users,
+            "total_activities": total_activities,
+            "total_emission": total_emission
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error get admin stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+# =============================================================================
 # ENDPOINT: HEALTH CHECK
 # =============================================================================
 

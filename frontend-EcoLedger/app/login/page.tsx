@@ -81,9 +81,13 @@ export default function LoginPage() {
                 description: `Selamat datang kembali, ${result.user.name}!`,
             })
 
-            // Redirect after short delay
+            // Redirect after short delay - based on role
             setTimeout(() => {
-                router.push("/dashboard")
+                if (result.user.role === "admin") {
+                    router.push("/admin")
+                } else {
+                    router.push("/dashboard")
+                }
             }, 1500)
 
         } catch (error: any) {
@@ -123,10 +127,10 @@ export default function LoginPage() {
                             <Alert
                                 variant={alert.type === "error" ? "destructive" : "default"}
                                 className={`mb-4 ${alert.type === "success"
-                                        ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300"
-                                        : alert.type === "warning"
-                                            ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300"
-                                            : ""
+                                    ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300"
+                                    : alert.type === "warning"
+                                        ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300"
+                                        : ""
                                     }`}
                             >
                                 {alert.type === "success" && <CheckCircle2 className="h-4 w-4" />}
