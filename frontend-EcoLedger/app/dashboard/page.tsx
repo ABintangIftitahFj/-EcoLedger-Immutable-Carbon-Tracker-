@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { PlusCircle, TrendingDown, Leaf, ShieldCheck, Bell, ArrowUpRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { apiClient, ActivityResponse, HashVerificationResponse } from "@/lib/api-client"
+import { apiClient, ActivityResponse, HashVerificationResponse, UserResponse } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 import { EcoAssistant } from "@/components/eco-assistant"
 
 export default function Dashboard() {
@@ -14,29 +15,55 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [verificationStatus, setVerificationStatus] = useState<HashVerificationResponse | null>(null)
   const [totalEmission, setTotalEmission] = useState(0)
+  const [user, setUser] = useState<UserResponse | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
+
+  // Get user from localStorage and setup API token
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    const token = localStorage.getItem("access_token")
+    
+    if (!storedUser || !token) {
+      router.push("/login")
+      return
+    }
+
+    try {
+      const userData = JSON.parse(storedUser)
+      setUser(userData)
+      apiClient.setAuthToken(token)
+    } catch (error) {
+      console.error("Error parsing user data:", error)
+      router.push("/login")
+    }
+  }, [router])
 
   useEffect(() => {
-    loadDashboardData()
-  }, [])
+    if (user) {
+      loadDashboardData()
+    }
+  }, [user])
 
   const loadDashboardData = async () => {
+    if (!user) return
+    
     setLoading(true)
     try {
       // Load activities
       const activitiesData = await apiClient.getActivities({
-        user_id: "user123", // TODO: Replace with actual user ID
+        user_id: user.id,
         page: 1,
         page_size: 5,
       })
       setActivities(activitiesData.activities)
 
       // Calculate total emission
-      const total = activitiesData.activities.reduce((sum, activity) => sum + activity.emission, 0)
+      const total = activitiesData.activities.reduce((sum, activity) => sum + (activity.emission || 0), 0)
       setTotalEmission(total)
 
       // Verify chain integrity
-      const verification = await apiClient.verifyChain()
+      const verification = await apiClient.verifyHashChain({ user_id: user.id })
       setVerificationStatus(verification)
     } catch (error: any) {
       toast({
@@ -181,7 +208,7 @@ export default function Dashboard() {
                         Hash ID: {formatHash(activity.current_hash)} • {formatDate(activity.timestamp)}
                       </span>
                     </div>
-                    <div className="font-bold text-primary">{activity.emission.toFixed(2)} kg CO2e</div>
+                    <div className="font-bold text-primary">{(activity.emission || 0).toFixed(2)} kg CO2e</div>
                   </div>
                 ))}
               </div>

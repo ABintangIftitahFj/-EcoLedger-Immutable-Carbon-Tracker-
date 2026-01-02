@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar, Sparkles, Calculator, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { apiClient, ActivityTypesResponse } from "@/lib/api-client"
+import { apiClient, ActivityTypesResponse, UserResponse } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
@@ -17,12 +17,12 @@ export default function CatatAktivitasPage() {
   const [selectedActivityType, setSelectedActivityType] = useState("")
   const [loading, setLoading] = useState(false)
   const [estimating, setEstimating] = useState(false)
+  const [user, setUser] = useState<UserResponse | null>(null)
   const { toast } = useToast()
   const router = useRouter()
 
   // Form state
   const [formData, setFormData] = useState({
-    user_id: "user123", // TODO: Replace with actual user ID from auth
     activity_type: "",
     distance_km: "",
     energy_kwh: "",
@@ -31,13 +31,35 @@ export default function CatatAktivitasPage() {
     description: "",
   })
 
+  // Get user from localStorage and setup API token
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    const token = localStorage.getItem("access_token")
+    
+    if (!storedUser || !token) {
+      router.push("/login")
+      return
+    }
+
+    try {
+      const userData = JSON.parse(storedUser)
+      setUser(userData)
+      apiClient.setAuthToken(token)
+    } catch (error) {
+      console.error("Error parsing user data:", error)
+      router.push("/login")
+    }
+  }, [router])
+
   // Estimation result
   const [estimatedEmission, setEstimatedEmission] = useState<number | null>(null)
 
   // Load activity types on mount
   useEffect(() => {
-    loadActivityTypes()
-  }, [])
+    if (user) {
+      loadActivityTypes()
+    }
+  }, [user])
 
   const loadActivityTypes = async () => {
     try {
@@ -103,7 +125,6 @@ export default function CatatAktivitasPage() {
     setLoading(true)
     try {
       const result = await apiClient.createActivity({
-        user_id: formData.user_id,
         activity_type: formData.activity_type,
         distance_km: formData.distance_km ? parseFloat(formData.distance_km) : undefined,
         energy_kwh: formData.energy_kwh ? parseFloat(formData.energy_kwh) : undefined,
@@ -150,6 +171,15 @@ export default function CatatAktivitasPage() {
   }
 
   const paramType = getParameterType(formData.activity_type)
+
+  // Show loading while user data is being loaded
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-8 max-w-3xl mx-auto pb-10">

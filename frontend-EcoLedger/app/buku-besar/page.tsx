@@ -1,55 +1,114 @@
+"use client"
+
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Search } from "lucide-react"
+import { CheckCircle2, Search, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Suspense } from "react"
+import { useState, useEffect } from "react"
+import { apiClient } from "@/lib/api-client"
+
+interface ActivityRecord {
+  id: string
+  timestamp: string
+  user_id: string
+  activity_type: string
+  emission: number
+  emission_unit: string
+  current_hash: string
+  verified: boolean
+}
 
 function BukuBesarContent() {
-  const publicRecords = [
-    {
-      id: "h4j8k2l9m3n1p5q7",
-      timestamp: "2025-12-24 14:32:15",
-      user: "Pengguna #1234",
-      activity: "Penggunaan Listrik Kantor",
-      amount: "1.2t CO2",
-      verified: true,
-    },
-    {
-      id: "k9l2m4n6p8q1r3s5",
-      timestamp: "2025-12-24 10:15:42",
-      user: "Organisasi #5678",
-      activity: "Logistik Pengiriman Nasional",
-      amount: "4.8t CO2",
-      verified: true,
-    },
-    {
-      id: "m1p5q7r9s2t4v6w8",
-      timestamp: "2025-12-23 16:48:23",
-      user: "Pengguna #9012",
-      activity: "Perjalanan Bisnis Jakarta-Surabaya",
-      amount: "0.4t CO2",
-      verified: true,
-    },
-    {
-      id: "n3q7r1s5t9v2w6x0",
-      timestamp: "2025-12-23 08:20:11",
-      user: "Organisasi #3456",
-      activity: "Operasional Pabrik Harian",
-      amount: "12.3t CO2",
-      verified: true,
-    },
-    {
-      id: "p5r9s3t7v1w5x9y2",
-      timestamp: "2025-12-22 19:55:37",
-      user: "Pengguna #7890",
-      activity: "Konsumsi Energi Rumah Tangga",
-      amount: "0.3t CO2",
-      verified: true,
-    },
-  ]
+  const [records, setRecords] = useState<ActivityRecord[]>([])
+  const [filteredRecords, setFilteredRecords] = useState<ActivityRecord[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch data dari API
+  useEffect(() => {
+    const fetchPublicRecords = async () => {
+      try {
+        setLoading(true)
+        const response = await apiClient.getActivities()
+        setRecords(response.activities)
+        setFilteredRecords(response.activities)
+      } catch (err) {
+        setError("Gagal memuat data buku besar")
+        console.error("Error fetching public records:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPublicRecords()
+  }, [])
+
+  // Filter records berdasarkan search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredRecords(records)
+    } else {
+      const filtered = records.filter(record =>
+        record.current_hash.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        record.activity_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        record.user_id.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      setFilteredRecords(filtered)
+    }
+  }, [searchQuery, records])
+
+  const handleSearch = () => {
+    // Search is handled by useEffect above, this function can be used for manual trigger
+  }
+
+  const maskUserId = (userId: string) => {
+    // Mask user ID untuk privasi
+    if (userId.length > 8) {
+      return `Pengguna #${userId.substring(0, 4)}...${userId.substring(userId.length - 4)}`
+    }
+    return `Pengguna #${userId}`
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1 py-12 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="ml-2">Memuat buku besar...</span>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1 py-12 md:py-24">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center justify-center h-64">
+                <p className="text-red-500">{error}</p>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -70,8 +129,14 @@ function BukuBesarContent() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex gap-2">
-                  <Input placeholder="Cari berdasarkan Hash ID atau pengguna..." className="flex-1" />
-                  <Button>
+                  <Input 
+                    placeholder="Cari berdasarkan Hash ID, jenis aktivitas, atau ID pengguna..." 
+                    className="flex-1"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                  <Button onClick={handleSearch}>
                     <Search className="h-4 w-4 mr-2" />
                     Cari
                   </Button>
@@ -81,32 +146,42 @@ function BukuBesarContent() {
 
             {/* Records List */}
             <div className="space-y-4">
-              {publicRecords.map((record) => (
-                <Card key={record.id} className="hover:border-primary/50 transition-colors">
-                  <CardHeader>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-lg">{record.activity}</CardTitle>
-                          {record.verified && (
+              {filteredRecords.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-muted-foreground">
+                      {searchQuery ? "Tidak ada data yang cocok dengan pencarian" : "Belum ada data aktivitas"}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredRecords.map((record) => (
+                  <Card key={record.id} className="hover:border-primary/50 transition-colors">
+                    <CardHeader>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg capitalize">{record.activity_type.replace('_', ' ')}</CardTitle>
                             <Badge variant="outline" className="gap-1 text-primary border-primary/50">
                               <CheckCircle2 className="h-3 w-3" />
                               Terverifikasi
                             </Badge>
-                          )}
+                          </div>
+                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                            <span>Hash ID: {record.current_hash}</span>
+                            <span>
+                              {maskUserId(record.user_id)} • {new Date(record.timestamp).toLocaleString('id-ID')}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                          <span>Hash ID: {record.id}</span>
-                          <span>
-                            {record.user} • {record.timestamp}
-                          </span>
+                        <div className="text-2xl font-bold text-primary">
+                          {record.emission} {record.emission_unit}
                         </div>
                       </div>
-                      <div className="text-2xl font-bold text-primary">{record.amount}</div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+                    </CardHeader>
+                  </Card>
+                ))
+              )}
             </div>
 
             {/* Info Footer */}
@@ -134,9 +209,5 @@ function BukuBesarContent() {
 }
 
 export default function BukuBesarPage() {
-  return (
-    <Suspense fallback={null}>
-      <BukuBesarContent />
-    </Suspense>
-  )
+  return <BukuBesarContent />
 }

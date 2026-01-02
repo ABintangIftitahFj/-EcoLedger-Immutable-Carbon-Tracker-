@@ -7,7 +7,7 @@ import { Leaf, Menu, User, X, LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
 import { useRouter, usePathname } from "next/navigation"
-import { UserResponse } from "@/lib/api-client"
+import { UserResponse, apiClient } from "@/lib/api-client"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)

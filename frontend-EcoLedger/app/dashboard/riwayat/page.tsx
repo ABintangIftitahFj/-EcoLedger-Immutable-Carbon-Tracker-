@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Search, Download, CheckCircle2, Calendar, Loader2, FileText } from "lucide-react"
 import { useState, useEffect } from "react"
-import { apiClient, ActivityResponse } from "@/lib/api-client"
+import { apiClient, ActivityResponse, UserResponse } from "@/lib/api-client"
 import { generateActivityPDF } from "@/lib/pdf-generator"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 export default function RiwayatPage() {
   const [activities, setActivities] = useState<ActivityResponse[]>([])
@@ -18,20 +19,45 @@ export default function RiwayatPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [total, setTotal] = useState(0)
+  const [user, setUser] = useState<UserResponse | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
 
   const PAGE_SIZE = 10
-  const USER_ID = "user123" // TODO: Replace with actual user ID
+
+  // Get user from localStorage and setup API token
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    const token = localStorage.getItem("access_token")
+    
+    if (!storedUser || !token) {
+      router.push("/login")
+      return
+    }
+
+    try {
+      const userData = JSON.parse(storedUser)
+      setUser(userData)
+      apiClient.setAuthToken(token)
+    } catch (error) {
+      console.error("Error parsing user data:", error)
+      router.push("/login")
+    }
+  }, [router])
 
   useEffect(() => {
-    loadActivities()
-  }, [page])
+    if (user) {
+      loadActivities()
+    }
+  }, [page, user])
 
   const loadActivities = async () => {
+    if (!user?.id) return
+    
     setLoading(true)
     try {
       const result = await apiClient.getActivities({
-        user_id: USER_ID,
+        user_id: user.id,
         page: page,
         page_size: PAGE_SIZE,
       })
@@ -66,6 +92,8 @@ export default function RiwayatPage() {
   }
 
   const handleExportPDF = async () => {
+    if (!user?.id) return
+    
     setExporting(true)
     try {
       toast({
@@ -81,7 +109,7 @@ export default function RiwayatPage() {
 
       while (hasMore) {
         const result = await apiClient.getActivities({
-          user_id: USER_ID,
+          user_id: user.id,
           page: currentPage,
           page_size: pageSize,
         })
@@ -114,7 +142,7 @@ export default function RiwayatPage() {
       const filename = generateActivityPDF({
         activities: allActivitiesForExport,
         totalEmission,
-        userId: USER_ID,
+        userId: user.id,
         dateRange: `Total ${allActivitiesForExport.length} aktivitas`
       })
 
@@ -162,6 +190,15 @@ export default function RiwayatPage() {
     if (activity.weight_kg) return `Berat: ${activity.weight_kg} kg`
     if (activity.money_spent) return `Biaya: $${activity.money_spent}`
     return "Tidak ada detail"
+  }
+
+  // Show loading while user data is being loaded
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
