@@ -19,9 +19,94 @@ Version: 1.0.0
 =============================================================================
 """
 
-from pydantic import BaseModel, Field, validator
-from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, Field, validator, EmailStr
+from typing import Optional, Dict, Any, List, Literal
 from datetime import datetime
+
+
+# =============================================================================
+# MODEL AUTENTIKASI: User dan Token
+# =============================================================================
+
+class UserCreate(BaseModel):
+    """Model untuk registrasi user baru."""
+    
+    email: EmailStr = Field(..., description="Email user (harus unik)")
+    password: str = Field(..., min_length=6, description="Password minimal 6 karakter")
+    name: str = Field(..., min_length=2, description="Nama lengkap user")
+    role: Literal["admin", "user"] = Field(
+        default="user",
+        description="Role user: 'admin' atau 'user'"
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "password123",
+                "name": "John Doe",
+                "role": "user"
+            }
+        }
+
+
+class UserLogin(BaseModel):
+    """Model untuk login user."""
+    
+    email: EmailStr = Field(..., description="Email user")
+    password: str = Field(..., description="Password user")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "password123"
+            }
+        }
+
+
+class UserResponse(BaseModel):
+    """Model response data user (tanpa password)."""
+    
+    id: str = Field(..., description="User ID")
+    email: str = Field(..., description="Email user")
+    name: str = Field(..., description="Nama lengkap")
+    role: str = Field(..., description="Role user (admin/user)")
+    created_at: str = Field(..., description="Waktu registrasi")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "507f1f77bcf86cd799439011",
+                "email": "user@example.com",
+                "name": "John Doe",
+                "role": "user",
+                "created_at": "2024-12-29T10:00:00"
+            }
+        }
+
+
+class TokenResponse(BaseModel):
+    """Model response setelah login berhasil."""
+    
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Tipe token")
+    user: UserResponse = Field(..., description="Data user yang login")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "user": {
+                    "id": "507f1f77bcf86cd799439011",
+                    "email": "user@example.com",
+                    "name": "John Doe",
+                    "role": "user",
+                    "created_at": "2024-12-29T10:00:00"
+                }
+            }
+        }
 
 
 # =============================================================================
@@ -233,6 +318,16 @@ class ActivityResponse(BaseModel):
     energy_kwh: Optional[float] = None
     weight_kg: Optional[float] = None
     money_spent: Optional[float] = None
+    
+    # === STATUS VALIDASI HASH ===
+    is_valid: Optional[bool] = Field(
+        None,
+        description="Status validasi hash: True jika hash valid, False jika tidak valid"
+    )
+    hash_status: Optional[str] = Field(
+        None,
+        description="Pesan status hash: 'valid', 'invalid', atau 'unverified'"
+    )
     
     class Config:
         json_schema_extra = {
