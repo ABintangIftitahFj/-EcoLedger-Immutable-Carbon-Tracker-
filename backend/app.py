@@ -72,6 +72,7 @@ from auth import (
     require_admin,
     TokenData
 )
+from cassandra_service import log_audit, get_audit_logs, get_audit_stats
 
 # =============================================================================
 # KONFIGURASI LOGGING
@@ -235,6 +236,15 @@ async def register(user: UserCreate):
             }
         )
         
+        # FR-11: Log audit ke Cassandra
+        log_audit(
+            user_id=user_id,
+            action_type="REGISTER",
+            entity="user",
+            entity_id=user_id,
+            description=f"User baru terdaftar: {user.email}"
+        )
+        
         logger.info(f"User baru terdaftar: {user.email}")
         
         return TokenResponse(
@@ -303,6 +313,15 @@ async def login(credentials: UserLogin):
                 "email": user["email"],
                 "role": user["role"]
             }
+        )
+        
+        # FR-11: Log audit ke Cassandra
+        log_audit(
+            user_id=user_id,
+            action_type="LOGIN",
+            entity="user",
+            entity_id=user_id,
+            description=f"User {user['email']} berhasil login"
         )
         
         logger.info(f"User login: {user['email']}")
@@ -462,6 +481,74 @@ async def get_admin_stats(
     except Exception as e:
         logger.error(f"Error get admin stats: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+# =============================================================================
+# ENDPOINT: AUDIT TRAIL (FR-11 & FR-12)
+# =============================================================================
+# Data disimpan di Cassandra untuk high-write performance
+
+@app.get(
+    "/api/admin/audit-logs",
+    tags=["Admin"],
+    summary="View Audit Trail (Admin only) - FR-12"
+)
+async def get_audit_trail(
+    user_id: str = Query(None, description="Filter by user ID"),
+    limit: int = Query(100, ge=1, le=500, description="Jumlah maksimal record"),
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Menampilkan audit trail dari Cassandra.
+    
+    FR-12: View Audit Trail
+    - Menampilkan riwayat aktivitas user secara real-time
+    - Untuk monitoring keamanan dan investigasi
+    - Data diambil dari Cassandra (eco_logs.activity_audit)
+    
+    Returns:
+        List of audit log records
+    """
+    try:
+        # Log akses audit trail
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="READ",
+            entity="audit_logs",
+            description=f"Admin {current_user.email} mengakses audit trail"
+        )
+        
+        # Get audit logs from Cassandra
+        logs = get_audit_logs(user_id=user_id, limit=limit)
+        
+        return {
+            "total": len(logs),
+            "logs": logs,
+            "source": "cassandra"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error get audit trail: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get(
+    "/api/admin/audit-stats",
+    tags=["Admin"],
+    summary="Statistik Audit Log (Admin only)"
+)
+async def get_audit_statistics(
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Mendapatkan statistik audit logs dari Cassandra.
+    """
+    try:
+        stats = get_audit_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error get audit stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 # =============================================================================

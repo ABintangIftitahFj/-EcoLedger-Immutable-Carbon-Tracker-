@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { Navbar } from "@/components/navbar"
-import { LayoutDashboard, Users, Activity, Settings, LogOut, Shield } from "lucide-react"
+import { LayoutDashboard, Users, Activity, Settings, LogOut, Shield, ScrollText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
@@ -99,6 +99,15 @@ export default function AdminLayout({
                             >
                                 <Activity className="h-4 w-4" />
                                 Semua Aktivitas
+                            </Button>
+                        </Link>
+                        <Link href="/admin/audit">
+                            <Button
+                                variant={isActive("/admin/audit") ? "secondary" : "ghost"}
+                                className="w-full justify-start gap-3"
+                            >
+                                <ScrollText className="h-4 w-4" />
+                                Audit Trail
                             </Button>
                         </Link>
 

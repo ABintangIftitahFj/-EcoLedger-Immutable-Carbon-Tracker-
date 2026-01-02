@@ -1,0 +1,2078 @@
+{
+  "components": {
+    "schemas": {
+      "models.AdministrativeArea": {
+        "properties": {
+          "full_name": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier from the GADM dataset",
+            "type": "string"
+          },
+          "level": {
+            "description": "sub-division level",
+            "type": "integer"
+          },
+          "level_0_id": {
+            "type": "string"
+          },
+          "level_1_id": {
+            "type": "string"
+          },
+          "level_2_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.AggregateEmissionsOverview": {
+        "properties": {
+          "summaries": {
+            "items": {
+              "$ref": "#/components/schemas/models.AggregateEmissionsSummary"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "timeseries": {
+            "items": {
+              "$ref": "#/components/schemas/models.AggregateEmissionsTimePeriod"
+            },
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "type": "object"
+      },
+      "models.AggregateEmissionsSummary": {
+        "properties": {
+          "emissionsQuantity": {
+            "description": "emissions quantity in tonnes",
+            "type": "number"
+          },
+          "gas": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "sector": {
+            "type": "string"
+          },
+          "subsector": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.AggregateEmissionsTimePeriod": {
+        "properties": {
+          "emissionsQuantity": {
+            "description": "emissions quantity in tonnes",
+            "type": "number"
+          },
+          "gas": {
+            "type": "string"
+          },
+          "month": {
+            "description": "Emissions month. Can be omitted if endpoints support `timeGranularity` parameter and is set to \"year\".",
+            "type": "integer"
+          },
+          "sector": {
+            "type": "string"
+          },
+          "subsector": {
+            "type": "string"
+          },
+          "year": {
+            "description": "Emissions year",
+            "example": 2025,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.AggregatedEmissionsResponse": {
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/models.EmissionsLocation"
+          },
+          "owners": {
+            "items": {
+              "$ref": "#/components/schemas/models.Owner"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "sectors": {
+            "$ref": "#/components/schemas/models.AggregateEmissionsOverview"
+          },
+          "subsectors": {
+            "$ref": "#/components/schemas/models.AggregateEmissionsOverview"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/models.AggregateEmissionsOverview"
+          }
+        },
+        "type": "object"
+      },
+      "models.AssetSubsectorRank": {
+        "properties": {
+          "rank": {
+            "description": "Global rank by subsector for total CO2 emissions produced by the parent source/asset in the specified year.",
+            "type": "integer"
+          },
+          "year": {
+            "description": "Rank year",
+            "example": 2025,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.CitiesSearchResult": {
+        "properties": {
+          "alternateNames": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "country": {
+            "description": "3-letter country code",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier from the GHS FUA dataset",
+            "type": "string"
+          },
+          "matchedName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.ConfidenceTimePeriod": {
+        "properties": {
+          "activity": {
+            "type": "string"
+          },
+          "asset_type": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "string"
+          },
+          "capacity_factor": {
+            "type": "string"
+          },
+          "ch4_emissions": {
+            "type": "string"
+          },
+          "ch4_emissions_factor": {
+            "type": "string"
+          },
+          "co2_emissions": {
+            "type": "string"
+          },
+          "co2_emissions_factor": {
+            "type": "string"
+          },
+          "n2o_emissions": {
+            "type": "string"
+          },
+          "n2o_emissions_factor": {
+            "type": "string"
+          },
+          "other_gas_emissions": {
+            "type": "string"
+          },
+          "other_gas_emissions_factor": {
+            "type": "string"
+          },
+          "total_co2e_20yrgwp": {
+            "type": "string"
+          },
+          "total_co2e_100yrgwp": {
+            "type": "string"
+          },
+          "year": {
+            "description": "Confidence year",
+            "example": 2025,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.Country": {
+        "properties": {
+          "continent": {
+            "description": "continent name",
+            "type": "string"
+          },
+          "id": {
+            "description": "3-letter country code",
+            "type": "string"
+          },
+          "name": {
+            "description": "country name",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.CountryEmissionsRank": {
+        "properties": {
+          "country": {
+            "description": "3-letter country code",
+            "type": "string"
+          },
+          "emissionsPerCapita": {
+            "description": "per capita emissions based on annual population data",
+            "type": "number"
+          },
+          "emissionsQuantity": {
+            "description": "emissions quantity in tonnes",
+            "type": "number"
+          },
+          "gas": {
+            "type": "string"
+          },
+          "name": {
+            "description": "country name",
+            "type": "string"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "rank": {
+            "description": "rank within the filtered list of countries",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.CountryEmissionsRankingsResponse": {
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/models.EmissionsLocation"
+          },
+          "rankings": {
+            "items": {
+              "$ref": "#/components/schemas/models.CountryEmissionsRank"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "totals": {
+            "$ref": "#/components/schemas/models.CountryEmissionsTotals"
+          }
+        },
+        "type": "object"
+      },
+      "models.CountryEmissionsTotals": {
+        "properties": {
+          "emissionsQuantity": {
+            "description": "emissions quantity in tonnes",
+            "type": "number"
+          },
+          "end": {
+            "description": "ISO 8601 date format",
+            "type": "string"
+          },
+          "gas": {
+            "type": "string"
+          },
+          "start": {
+            "description": "ISO 8601 date format",
+            "type": "string"
+          },
+          "timeseries": {
+            "items": {
+              "$ref": "#/components/schemas/models.AggregateEmissionsTimePeriod"
+            },
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "type": "object"
+      },
+      "models.EmissionsLocation": {
+        "properties": {
+          "cityId": {
+            "description": "unique identifier of an Urban Area in the GHS FUA dataset",
+            "type": "string"
+          },
+          "continent": {
+            "description": "continent name",
+            "type": "string"
+          },
+          "country": {
+            "description": "3-letter country code",
+            "type": "string"
+          },
+          "countryGroup": {
+            "description": "country group identifier",
+            "type": "string"
+          },
+          "gadmId": {
+            "description": "unique identifier of an Administrative Area in the GADM dataset",
+            "type": "string"
+          },
+          "name": {
+            "description": "location name",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.Owner": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.OwnersSearchResult": {
+        "properties": {
+          "id": {
+            "description": "unique identifier of an owner",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.SourceCentroid": {
+        "description": "Location of the emission source. For \"point-source\" facilities, these are the actual coordinates of the emissions source, whereas for spatially aggregated emissions sources, the coordinates correspond roughly to the centroid of the boundary being aggregated. See also `sourceType`.",
+        "properties": {
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "srid": {
+            "description": "Spatial reference identifier denoting a coordinate reference system",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.SourceDetails": {
+        "properties": {
+          "assetType": {
+            "description": "Description of the emission source classification.",
+            "type": "string"
+          },
+          "centroid": {
+            "$ref": "#/components/schemas/models.SourceCentroid"
+          },
+          "confidence": {
+            "items": {
+              "$ref": "#/components/schemas/models.ConfidenceTimePeriod"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "country": {
+            "description": "Corresponds to the ISO 3166-1 alpha-3 specification of the country where the entity is physically located.",
+            "type": "string"
+          },
+          "emissions": {
+            "description": "Time series of emissions over the target time range. `timeGranularity` parameter determines units of time.",
+            "items": {
+              "$ref": "#/components/schemas/models.SourceEmissionsTimePeriod"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "id": {
+            "description": "The internal Climate TRACE identifier for each individual source of emissions. Every distinct emissions source\nis defined by a unique combination of facility name, country, source type, and subsector.",
+            "type": "integer"
+          },
+          "name": {
+            "description": "Name of the entity or source that produced the emissions. Where exact names were not available, Climate TRACE\nhas created descriptive names based on source location.",
+            "type": "string"
+          },
+          "owners": {
+            "items": {
+              "$ref": "#/components/schemas/models.SourceOwner"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "sector": {
+            "description": "The high level sector that the subsectors fall under (i.e. Agriculture, Mineral Extraction, etc.)",
+            "type": "string"
+          },
+          "sourceType": {
+            "description": "Indicates whether the emission source has a specific location or is spatially aggregated over an administrative boundary or functional urban area.",
+            "type": "string"
+          },
+          "subsector": {
+            "description": "The more granular sector name for the emissions being measured (i.e. rice-cultivation, copper-mining, etc.)",
+            "type": "string"
+          },
+          "subsectorRanks": {
+            "items": {
+              "$ref": "#/components/schemas/models.AssetSubsectorRank"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "totals": {
+            "$ref": "#/components/schemas/models.SourceEmissionsTimePeriod"
+          }
+        },
+        "type": "object"
+      },
+      "models.SourceEmissionsTimePeriod": {
+        "description": "Cumulative emissions values over a period of time",
+        "properties": {
+          "activity": {
+            "description": "Activity of the entity producing the emissions, not including units. See definition of `capacity`. Activity data are not available for some subsectors due to licensing restrictions",
+            "type": "number"
+          },
+          "activityUnits": {
+            "description": "Units of reported `activity`. Climate TRACE used SI base units and standard abbreviations when possible. https://www.nist.gov/pml/owm/metric-si/si-units",
+            "type": "string"
+          },
+          "capacity": {
+            "description": "Capacity of the entity producing emissions, not including units. Because `capacity` has different definitions in different sectors. Please see the capacity units column for detailed information.",
+            "type": "number"
+          },
+          "capacityFactor": {
+            "description": "Corresponds to the ratio of the actual source output (activity) to the source capacity. When data not available, this is not relevant for the subsector.",
+            "type": "number"
+          },
+          "capacityUnits": {
+            "description": "Units of reported `capacity` field. Climate TRACE uses SI base units and standard abbreviations when possible. https://www.nist.gov/pml/owm/metric-si/si-units",
+            "type": "string"
+          },
+          "emissionsFactor": {
+            "description": "Emissions factor of reported activity. Emissions factors vary by sector, subsector, and source type. Emission factors data are not available for some subsectors due to licensing restrictions.",
+            "type": "number"
+          },
+          "emissionsFactorUnits": {
+            "description": "Units of reported `emissions_factor` field. Climate TRACE uses SI base units and standard abbreviations when possible. https://www.nist.gov/pml/owm/metric-si/si-units",
+            "type": "string"
+          },
+          "emissionsQuantity": {
+            "description": "Quantity of gas emitted in metric tonnes. If reported quantity is zero, it means that gas is not emitted. If reported quantity is empty/null/NA, data is not yet available.",
+            "type": "number"
+          },
+          "gas": {
+            "description": "Air emissions which are reported in metric tonnes. Climate TRACE reports greenhouse gas emissions from Carbon Dioxide (CO2),\nMethane (CH4) and Nitrous oxide (N2O) as well as all three gases combined and expressed in CO2-equivalents are available (100\nyear and 20 year time frame using IPCC Sixth Assessment Report (AR6) Global Warming Potentials). Climate TRACE reports the\nair pollutants: Particulate Matter (PM2.5), Black Carbon (BC), and Organic Carbon (OC), sulphur dioxide (SO2), Volatile Organic\nCompounds (VOCs), Carbon Monoxide (CO), Ammonia (NH3), and Nitrogen Oxides (NOx).",
+            "type": "string"
+          },
+          "month": {
+            "description": "Emissions month. Can be omitted if endpoint supports `timeGranularity` parameter and is set to \"year\".",
+            "type": "integer"
+          },
+          "sector": {
+            "type": "string"
+          },
+          "subsector": {
+            "type": "string"
+          },
+          "year": {
+            "description": "Emissions year",
+            "example": 2025,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.SourceOwner": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.SourceSummary": {
+        "properties": {
+          "activity": {
+            "description": "Activity of the entity producing the emissions, not including units. See definition of `capacity`. Activity data are not available for some subsectors due to licensing restrictions",
+            "type": "number"
+          },
+          "activityUnits": {
+            "description": "Units of reported `activity`. Climate TRACE used SI base units and standard abbreviations when possible. https://www.nist.gov/pml/owm/metric-si/si-units",
+            "type": "string"
+          },
+          "assetType": {
+            "description": "Description of the emission source classification.",
+            "type": "string"
+          },
+          "capacity": {
+            "description": "Capacity of the entity producing emissions, not including units. Because `capacity` has different definitions in different sectors. Please see the capacity units column for detailed information.",
+            "type": "number"
+          },
+          "capacityFactor": {
+            "description": "Corresponds to the ratio of the actual source output (activity) to the source capacity. When data not available, this is not relevant for the subsector.",
+            "type": "number"
+          },
+          "capacityUnits": {
+            "description": "Units of reported `capacity` field. Climate TRACE uses SI base units and standard abbreviations when possible. https://www.nist.gov/pml/owm/metric-si/si-units",
+            "type": "string"
+          },
+          "centroid": {
+            "$ref": "#/components/schemas/models.SourceCentroid"
+          },
+          "country": {
+            "description": "Corresponds to the ISO 3166-1 alpha-3 specification of the country where the entity is physically located.",
+            "type": "string"
+          },
+          "emissionsFactor": {
+            "description": "Emissions factor of reported activity. Emissions factors vary by sector, subsector, and source type. Emission factors data are not available for some subsectors due to licensing restrictions.",
+            "type": "number"
+          },
+          "emissionsFactorUnits": {
+            "description": "Units of reported `emissions_factor` field. Climate TRACE uses SI base units and standard abbreviations when possible. https://www.nist.gov/pml/owm/metric-si/si-units",
+            "type": "string"
+          },
+          "emissionsQuantity": {
+            "description": "Quantity of gas emitted in metric tonnes. If reported quantity is zero, it means that gas is not emitted. If reported quantity is empty/null/NA, data is not yet available.",
+            "type": "number"
+          },
+          "gas": {
+            "description": "Air emissions which are reported in metric tonnes. Climate TRACE reports greenhouse gas emissions from Carbon Dioxide (CO2),\nMethane (CH4) and Nitrous oxide (N2O) as well as all three gases combined and expressed in CO2-equivalents are available (100\nyear and 20 year time frame using IPCC Sixth Assessment Report (AR6) Global Warming Potentials). Climate TRACE reports the\nair pollutants: Particulate Matter (PM2.5), Black Carbon (BC), and Organic Carbon (OC), sulphur dioxide (SO2), Volatile Organic\nCompounds (VOCs), Carbon Monoxide (CO), Ammonia (NH3), and Nitrogen Oxides (NOx).",
+            "type": "string"
+          },
+          "id": {
+            "description": "The internal Climate TRACE identifier for each individual source of emissions. Every distinct emissions source\nis defined by a unique combination of facility name, country, source type, and subsector.",
+            "type": "integer"
+          },
+          "name": {
+            "description": "Name of the entity or source that produced the emissions. Where exact names were not available, Climate TRACE\nhas created descriptive names based on source location.",
+            "type": "string"
+          },
+          "sector": {
+            "description": "The high level sector that the subsectors fall under (i.e. Agriculture, Mineral Extraction, etc.)",
+            "type": "string"
+          },
+          "sourceType": {
+            "description": "Indicates whether the emission source has a specific location or is spatially aggregated over an administrative boundary or functional urban area.",
+            "type": "string"
+          },
+          "subsector": {
+            "description": "The more granular sector name for the emissions being measured (i.e. rice-cultivation, copper-mining, etc.)",
+            "type": "string"
+          },
+          "year": {
+            "description": "Emissions year",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "models.SubSector": {
+        "properties": {
+          "asset": {
+            "type": "boolean"
+          },
+          "country": {
+            "type": "boolean"
+          },
+          "dataLeads": {
+            "items": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": false
+          },
+          "locationDisplay": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sector": {
+            "type": "string"
+          },
+          "sectorDisplay": {
+            "type": "string"
+          },
+          "subsectorDisplay": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "",
+    "url": "https://climatetrace.org/contact"
+  },
+  "info": {
+    "description": "Access emissions data produced by Climate TRACE.",
+    "title": "Climate TRACE API",
+    "version": "7.1.3"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/v7/admins": {
+      "get": {
+        "description": "Search Administrative Areas by name, bounding box, or level",
+        "operationId": "admin-area-search",
+        "parameters": [
+          {
+            "description": "any part of an administrative area's name",
+            "example": "Ind",
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "spatially filter the search with a bounding box. format: minX,minY,maxX,maxY example: `bbox=-122.202,36.892,-101.208,37.484`",
+            "in": "query",
+            "name": "bbox",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "description": "depth of subdivision of country administrative areas. countries = 0, states = 1, counties = 2",
+            "in": "query",
+            "name": "level",
+            "schema": {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            }
+          },
+          {
+            "description": "maximum number of results to return",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "index of first result. use in conjunction with limit for pagination.",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/models.AdministrativeArea"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "[]models.AdministrativeArea"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Administrative Areas Search",
+        "tags": [
+          "Administrative Areas"
+        ]
+      }
+    },
+    "/v7/admins/:id": {
+      "get": {
+        "description": "Get details about an administrative area.",
+        "operationId": "admin-area-by-id",
+        "parameters": [
+          {
+            "description": "Administrative Area id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.AdministrativeArea"
+                }
+              }
+            },
+            "description": "models.AdministrativeArea"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Administrative Area By ID",
+        "tags": [
+          "Administrative Areas"
+        ]
+      }
+    },
+    "/v7/admins/:id/subdivisions": {
+      "get": {
+        "description": "List the subdivisions one level below an administrative area.\nSpecify a country to list its states or specify a state to list its counties.",
+        "operationId": "admin-area-subdivisions",
+        "parameters": [
+          {
+            "description": "Administrative Area id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/models.AdministrativeArea"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "[]models.AdministrativeArea"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Administrative Area Subdivisions",
+        "tags": [
+          "Administrative Areas"
+        ]
+      }
+    },
+    "/v7/cities": {
+      "get": {
+        "description": "Search Urban Areas by name, country, or bounding box",
+        "operationId": "cities-search",
+        "parameters": [
+          {
+            "description": "any part of a city name",
+            "example": "San Fran",
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "3-letter country code",
+            "in": "query",
+            "name": "country",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "spatially filter the search with a bounding box. format: minX,minY,maxX,maxY example: `bbox=-122.202,36.892,-101.208,37.484`",
+            "in": "query",
+            "name": "bbox",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "description": "maximum number of results to return",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "index of first result. use in conjunction with limit for pagination.",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/models.CitiesSearchResult"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "[]models.CitiesSearchResult"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Cities Search",
+        "tags": [
+          "Cities"
+        ]
+      }
+    },
+    "/v7/definitions/continents": {
+      "get": {
+        "description": "List continents",
+        "operationId": "define-continents",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Continents",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/continents/:continent": {
+      "get": {
+        "description": "List countries that are part of the specified continent",
+        "operationId": "define-continent-details",
+        "parameters": [
+          {
+            "description": "continent name",
+            "in": "path",
+            "name": "continent",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "countries": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "Continent details",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/countries": {
+      "get": {
+        "description": "List countries",
+        "operationId": "define-countries",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/models.Country"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "array of models.Country"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Countries",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/countries/:country": {
+      "get": {
+        "description": "Details of the specified country",
+        "operationId": "define-country-details",
+        "parameters": [
+          {
+            "description": "iso3 country code",
+            "in": "path",
+            "name": "country",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.Country"
+                }
+              }
+            },
+            "description": "models.Country"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Country details",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/countrygroups": {
+      "get": {
+        "description": "List country groups",
+        "operationId": "define-countrygroups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "countrygroup": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Country Groups",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/countrygroups/:group": {
+      "get": {
+        "description": "List countries that are part of the specified country group",
+        "operationId": "define-countrygroup-details",
+        "parameters": [
+          {
+            "description": "country group",
+            "in": "path",
+            "name": "group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Country Group details",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/gases": {
+      "get": {
+        "description": "List gases. GHGs (ch4, co2, co2e_100yr, co2e_20yr, n2o) are supported throughout the API.\nIn addition, there are non-GHG emissions data available for some sources.",
+        "operationId": "define-gases",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Gases",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/sectors": {
+      "get": {
+        "description": "List sector names",
+        "operationId": "define-sectors",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Sectors",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/sectors/:sector": {
+      "get": {
+        "description": "List subsectors assigned to the specified sector name",
+        "operationId": "define-sector-details",
+        "parameters": [
+          {
+            "description": "sector name",
+            "in": "path",
+            "name": "sector",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "subSectors": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Sector details",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/subsectors": {
+      "get": {
+        "description": "List subsector names",
+        "operationId": "define-subsectors",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Subsectors",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/definitions/subsectors/:subsector": {
+      "get": {
+        "description": "List subsectors assigned to the specified sector name",
+        "operationId": "define-subsector-details",
+        "parameters": [
+          {
+            "description": "subsector name",
+            "in": "path",
+            "name": "subsector",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.SubSector"
+                }
+              }
+            },
+            "description": "models.SubSector"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "Subsector details",
+        "tags": [
+          "Definitions"
+        ]
+      }
+    },
+    "/v7/owners": {
+      "get": {
+        "description": "Search Owners by name",
+        "operationId": "owners-search",
+        "parameters": [
+          {
+            "description": "any part of an owner's name",
+            "example": "Petro",
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "maximum number of results to return",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "index of first result. use in conjunction with limit for pagination.",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/models.OwnersSearchResult"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "[]models.OwnersSearchResult"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Owners Search",
+        "tags": [
+          "Source Ownership"
+        ]
+      }
+    },
+    "/v7/rankings/countries": {
+      "get": {
+        "description": "Rank countries by their emissions of a gas over a range of time.\nMonthly data is available for January 2015 through the current year.\n`start` and `end` support multiple formats. For best results, use\nyear (e.g. \"2024\") or month (e.g. \"2024-01\") formats.\nIf using the date format (e.g. \"2024-01-01\"), ensure that `start` is the first day of a month or year\nand that `end` is the last day of a month or year (e.g. \"2024-05-01\" through \"2025-05-31\").",
+        "operationId": "rank-countries-by-emissions",
+        "parameters": [
+          {
+            "description": "see Definitions for supported gases",
+            "in": "query",
+            "name": "gas",
+            "schema": {
+              "default": "co2e_100yr",
+              "type": "string"
+            }
+          },
+          {
+            "description": "start of time range. supports multiple formats: year (2024), month (2024-01) or date (2024-01-01). year and month formats automatically use the first day of the year/month. minimum: 2015-01-01",
+            "in": "query",
+            "name": "start",
+            "schema": {
+              "default": "2024-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "description": "end of time range. supports multiple formats: year (2024), month (2024-12) or date (2024-12-31). year and month formats automatically use the last day of the year/month. minimum: 2015-01-31",
+            "in": "query",
+            "name": "end",
+            "schema": {
+              "default": "2024-12-31",
+              "type": "string"
+            }
+          },
+          {
+            "description": "comma-separated list of sectors. see Definitions for supported values",
+            "in": "query",
+            "name": "sectors",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "comma-separated list of subsectors. see Definitions for supported values",
+            "in": "query",
+            "name": "subsectors",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Country Group id. see Definitions for supported values",
+            "in": "query",
+            "name": "countryGroup",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Continent name. see Definitions for supported values",
+            "in": "query",
+            "name": "continent",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.CountryEmissionsRankingsResponse"
+                }
+              }
+            },
+            "description": "models.CountryEmissionsRankingsResponse"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Rank Countries By Emissions",
+        "tags": [
+          "Rankings"
+        ]
+      }
+    },
+    "/v7/sources": {
+      "get": {
+        "description": "Rank sources by their emissions quantities.\nAnnual data is available for 2021 through the current year.\nSources can be filtered by year, gas, location, owners, sectors, and subsectors.\nThe `sectors` parameter also accepts a special \"all_no_forest\" value, which will\nreturn sources from all sectors except `forestry-and-land-use`.\nUp to one location parameter can be used at a time: `gadmId`, `countryGroup`, `continent`, or `cityId`.",
+        "operationId": "sources-ranked",
+        "parameters": [
+          {
+            "description": "emissions year",
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "default": 2024,
+              "minimum": 2021,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "see Definitions for supported gases",
+            "in": "query",
+            "name": "gas",
+            "schema": {
+              "default": "co2e_100yr",
+              "type": "string"
+            }
+          },
+          {
+            "description": "comma-separated list of sectors. see Definitions for supported values",
+            "in": "query",
+            "name": "sectors",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "comma-separated list of subsectors. see Definitions for supported values",
+            "in": "query",
+            "name": "subsectors",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Administrative Area id",
+            "in": "query",
+            "name": "gadmId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "City/Urban Area id",
+            "in": "query",
+            "name": "cityId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Country Group id. see Definitions for supported values",
+            "in": "query",
+            "name": "countryGroup",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Continent name. see Definitions for supported values",
+            "in": "query",
+            "name": "continent",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "comma-separated list of owner ids",
+            "in": "query",
+            "name": "ownerIds",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "maximum number of results to return",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "index of first result. use in conjunction with limit for pagination.",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/models.SourceSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "[]models.SourceSummary"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Sources Ranked By Emissions",
+        "tags": [
+          "Emissions Sources"
+        ]
+      }
+    },
+    "/v7/sources/:id": {
+      "get": {
+        "description": "Get details and emissions data for a specific source/asset.\nMonthly data is available for January 2021 through the current year.",
+        "operationId": "source-by-id",
+        "parameters": [
+          {
+            "description": "source id",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "start year of time range. minimum: 2021-01-01",
+            "in": "query",
+            "name": "start",
+            "schema": {
+              "default": "2024",
+              "type": "string"
+            }
+          },
+          {
+            "description": "end year of time range. minimum: 2021-01-31",
+            "in": "query",
+            "name": "end",
+            "schema": {
+              "default": "2024",
+              "type": "string"
+            }
+          },
+          {
+            "description": "unit of time for aggregating emissions over the range defined by start/end",
+            "in": "query",
+            "name": "timeGranularity",
+            "schema": {
+              "default": "year",
+              "enum": [
+                "month",
+                "year"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "see Definitions for supported gases",
+            "in": "query",
+            "name": "gas",
+            "schema": {
+              "default": "co2e_100yr",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.SourceDetails"
+                }
+              }
+            },
+            "description": "models.SourceDetails"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Source by ID",
+        "tags": [
+          "Emissions Sources"
+        ]
+      }
+    },
+    "/v7/sources/emissions": {
+      "get": {
+        "description": "Get monthly aggregated emissions for a calendar year.\nEmissions can be filtered by year, gas, location, owners, sectors, and subsectors.\nThe resulting totals are grouped by sector and subsector.\nThe `sectors` parameter also accepts a special \"all_no_forest\" value,\nwhich returns emissions for all sectors except `forestry-and-land-use` and is\nuseful for obtaining totals that match those shown at https://climatetrace.org/explore which\nby default excludes `forestry-and-land-use` emissions unless that sector is explicitly chosen.\nUp to one location parameter can be used at a time: `gadmId`, `countryGroup`, `continent`, or `cityId`.\nFor `cityId` and `gadmId` levels 1 and 2 (e.g. states and counties), data is available from 2021 through the current year.\nFor global and `continent`, `countryGroup`, and `gadmId` level 0 (country), data is available beginning 2015 through the current year.",
+        "operationId": "get-aggregate-emissions",
+        "parameters": [
+          {
+            "description": "emissions year",
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "default": 2024,
+              "minimum": 2015,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "see Definitions for supported gases",
+            "in": "query",
+            "name": "gas",
+            "schema": {
+              "default": "co2e_100yr",
+              "type": "string"
+            }
+          },
+          {
+            "description": "comma-separated list of sectors. see Definitions for supported values",
+            "in": "query",
+            "name": "sectors",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "comma-separated list of subsectors. see Definitions for supported values",
+            "in": "query",
+            "name": "subsectors",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "Administrative Area id",
+            "in": "query",
+            "name": "gadmId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "City/Urban Area id",
+            "in": "query",
+            "name": "cityId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Country Group id. see Definitions for supported values",
+            "in": "query",
+            "name": "countryGroup",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Continent name. see Definitions for supported values",
+            "in": "query",
+            "name": "continent",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "comma-separated list of owner ids",
+            "in": "query",
+            "name": "ownerIds",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.AggregatedEmissionsResponse"
+                }
+              }
+            },
+            "description": "models.AggregatedEmissionsResponse"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Aggregate Emissions",
+        "tags": [
+          "Emissions Sources"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Production",
+      "url": "https://api.climatetrace.org"
+    },
+    {
+      "description": "Staging",
+      "url": "https://api.staging.c10e.org"
+    },
+    {
+      "description": "Development",
+      "url": "https://api.dev.c10e.org"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Data for aggregated emissions totals and individual sources.",
+      "name": "Emissions Sources"
+    },
+    {
+      "description": "Global and regional rankings.",
+      "name": "Rankings"
+    },
+    {
+      "description": "Metadata for nations and their 1st and 2nd levels of subdivision (e.g. states and counties). Climate TRACE uses identifiers and boundary data from GADM, the Database of Global Administrative Areas. This API's endpoints use the `gadmId` parameter for a unique identifier of an administrative area.",
+      "name": "Administrative Areas"
+    },
+    {
+      "description": "Metadata for urban areas. Climate TRACE uses the GHS Functional Urban Areas (GHS-FUA) dataset for urban area identifiers, names, and boundary data. These are not the same as legal municipal boundaries.",
+      "name": "Cities"
+    },
+    {
+      "description": "Metadata for ownership of emissions sources",
+      "name": "Source Ownership"
+    },
+    {
+      "description": "Metadata for the API's common parameters and attributes.",
+      "name": "Definitions"
+    }
+  ]
+}
