@@ -1,18 +1,38 @@
 "use client"
 
 import type React from "react"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Leaf, Menu, User, X } from "lucide-react"
-import { useState } from "react"
+import { Leaf, Menu, User, X, LogOut } from "lucide-react"
+import { useState, useEffect } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
 import { useRouter, usePathname } from "next/navigation"
+import { UserResponse } from "@/lib/api-client"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [user, setUser] = useState<UserResponse | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+
+  // Check if user is logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch {
+        setUser(null)
+      }
+    }
+  }, [pathname]) // Re-check when pathname changes
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("user")
+    setUser(null)
+    router.push("/")
+  }
 
   const handleBerandaClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -36,7 +56,6 @@ export function Navbar() {
       const element = document.getElementById("keunggulan")
       if (element) {
         element.scrollIntoView({ behavior: "smooth" })
-        // Update URL hash tanpa reload
         window.history.pushState(null, "", "#keunggulan")
       }
     }
@@ -71,7 +90,7 @@ export function Navbar() {
           >
             Keunggulan
           </a>
-          <Link href="/buku-besar" className="text-sm font-medium transition-colors hover:text-primary">
+          <Link href="/ledger" className="text-sm font-medium transition-colors hover:text-primary">
             Buku Besar Publik
           </Link>
           <Link href="/tentang" className="text-sm font-medium transition-colors hover:text-primary">
@@ -90,12 +109,38 @@ export function Navbar() {
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm" className="hidden md:flex gap-2 bg-transparent">
-              <User className="h-4 w-4" />
-              Masuk
-            </Button>
-          </Link>
+
+          {/* Auth buttons */}
+          {user ? (
+            <div className="hidden md:flex items-center gap-2">
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                  <User className="h-4 w-4" />
+                  {user.name}
+                  {user.role === "admin" && (
+                    <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">Admin</span>
+                  )}
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-2">
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Masuk
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button size="sm" className="gap-2">
+                  <User className="h-4 w-4" />
+                  Daftar
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -117,7 +162,7 @@ export function Navbar() {
               Keunggulan
             </a>
             <Link
-              href="/buku-besar"
+              href="/ledger"
               className="text-sm font-medium transition-colors hover:text-primary"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -130,12 +175,36 @@ export function Navbar() {
             >
               Tentang Kami
             </Link>
-            <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
-              <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
-                <User className="h-4 w-4" />
-                Masuk
-              </Button>
-            </Link>
+
+            {/* Mobile auth */}
+            {user ? (
+              <>
+                <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
+                    <User className="h-4 w-4" />
+                    {user.name}
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full gap-2">
+                  <LogOut className="h-4 w-4" />
+                  Keluar
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
+                    Masuk
+                  </Button>
+                </Link>
+                <Link href="/register" onClick={() => setIsMenuOpen(false)}>
+                  <Button size="sm" className="w-full gap-2">
+                    <User className="h-4 w-4" />
+                    Daftar
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       )}

@@ -40,6 +40,55 @@ services:
     depends_on:
       - mongodb
 
+  # 4. Backend: FastAPI (runs with Uvicorn)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: eco_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    environment:
+      - APP_PORT=8000
+    volumes:
+      - ../backend:/app
+    depends_on:
+      - mongodb
+
+  # 5. Frontend: Next.js (development server)
+  frontend:
+    build:
+      context: ../frontend-EcoLedger
+      dockerfile: Dockerfile
+    container_name: eco_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../.env
+    environment:
+      - NEXT_PUBLIC_API_URL
+    volumes:
+      - ../frontend-EcoLedger:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+
+  # 6. One-shot init script for MongoDB: creates collections & indexes
+  mongo-init:
+    image: python:3.11-slim
+    container_name: eco_mongo_init
+    restart: "no"
+    volumes:
+      - ./init_db.py:/init_db.py:ro
+    depends_on:
+      - mongodb
+    entrypoint: ["sh","-c","pip install pymongo --no-cache-dir && python /init_db.py"]
+
 volumes:
   mongo_data:
   cassandra_data:

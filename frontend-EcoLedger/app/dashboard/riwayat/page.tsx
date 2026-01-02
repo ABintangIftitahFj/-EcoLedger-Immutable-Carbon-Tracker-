@@ -19,7 +19,7 @@ export default function RiwayatPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [total, setTotal] = useState(0)
   const { toast } = useToast()
-  
+
   const PAGE_SIZE = 10
   const USER_ID = "user123" // TODO: Replace with actual user ID
 
@@ -35,7 +35,7 @@ export default function RiwayatPage() {
         page: page,
         page_size: PAGE_SIZE,
       })
-      
+
       setActivities(result.activities)
       setTotal(result.total)
       setTotalPages(Math.ceil(result.total / PAGE_SIZE))
@@ -87,7 +87,7 @@ export default function RiwayatPage() {
         })
 
         allActivitiesForExport = [...allActivitiesForExport, ...result.activities]
-        
+
         // Check if there are more pages
         hasMore = result.activities.length === pageSize && currentPage * pageSize < result.total
         currentPage++
@@ -106,7 +106,7 @@ export default function RiwayatPage() {
       }
 
       const totalEmission = allActivitiesForExport.reduce(
-        (sum, activity) => sum + activity.emission, 
+        (sum, activity) => sum + activity.emission,
         0
       )
 
@@ -135,9 +135,9 @@ export default function RiwayatPage() {
 
   const formatDate = (isoDate: string) => {
     const date = new Date(isoDate)
-    return date.toLocaleDateString('id-ID', { 
-      day: 'numeric', 
-      month: 'short', 
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -145,9 +145,9 @@ export default function RiwayatPage() {
   }
 
   const getCategoryName = (activityType: string): string => {
-    if (activityType.includes("car") || activityType.includes("motorbike") || 
-        activityType.includes("bus") || activityType.includes("train") || 
-        activityType.includes("flight")) {
+    if (activityType.includes("car") || activityType.includes("motorbike") ||
+      activityType.includes("bus") || activityType.includes("train") ||
+      activityType.includes("flight")) {
       return "Transportasi"
     }
     if (activityType.includes("electricity") || activityType.includes("gas")) {
@@ -173,8 +173,8 @@ export default function RiwayatPage() {
             Semua catatan emisi karbon Anda yang telah terverifikasi dengan hash chain.
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="gap-2 bg-transparent"
           onClick={handleExportPDF}
           disabled={exporting || loading || total === 0}
@@ -198,8 +198,8 @@ export default function RiwayatPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <Input 
-                placeholder="Cari berdasarkan kategori atau Hash ID..." 
+              <Input
+                placeholder="Cari berdasarkan kategori atau Hash ID..."
                 className="w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -237,10 +237,22 @@ export default function RiwayatPage() {
                   <div className="space-y-3 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary">{getCategoryName(activity.activity_type)}</Badge>
-                      <Badge variant="outline" className="gap-1 text-primary border-primary/50">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Terverifikasi
-                      </Badge>
+                      {activity.is_valid === true ? (
+                        <Badge variant="outline" className="gap-1 text-green-600 border-green-500/50 bg-green-500/10">
+                          <CheckCircle2 className="h-3 w-3" />
+                          VALID
+                        </Badge>
+                      ) : activity.is_valid === false ? (
+                        <Badge variant="outline" className="gap-1 text-red-600 border-red-500/50 bg-red-500/10">
+                          <span className="h-3 w-3">⚠️</span>
+                          INVALID
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-500/50 bg-yellow-500/10">
+                          <span className="h-3 w-3">⏳</span>
+                          Unverified
+                        </Badge>
+                      )}
                     </div>
                     <CardTitle className="text-xl">
                       {activity.description || activity.activity_type}
@@ -278,7 +290,7 @@ export default function RiwayatPage() {
             >
               Previous
             </Button>
-            
+
             <div className="flex items-center gap-2">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const pageNum = i + 1

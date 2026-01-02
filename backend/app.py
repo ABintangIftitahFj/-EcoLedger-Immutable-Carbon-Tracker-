@@ -34,7 +34,7 @@ Version: 1.0.0
 =============================================================================
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -53,11 +53,25 @@ from models import (
     HashVerificationResponse,
     ActivityListResponse,
     ErrorResponse,
-    ClimatiqData
+    ClimatiqData,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    TokenResponse
 )
 from climatiq_service import climatiq_service, ClimatiqAPIError
 from activity_mapper import ActivityMapper
-from hashing import generate_hash, verify_chain
+from hashing import generate_hash, verify_chain, verify_hash
+from auth import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    get_current_user,
+    get_current_active_user,
+    get_optional_user,
+    require_admin,
+    TokenData
+)
 
 # =============================================================================
 # KONFIGURASI LOGGING
@@ -158,6 +172,198 @@ app.add_middleware(
     # Izinkan semua header
     allow_headers=["*"],
 )
+
+
+# =============================================================================
+# ENDPOINT: AUTHENTICATION
+# =============================================================================
+
+@app.post(
+    "/api/auth/register",
+    response_model=TokenResponse,
+    tags=["Autentikasi"],
+    summary="Registrasi user baru"
+)
+async def register(user: UserCreate):
+    """
+    Mendaftarkan user baru ke sistem.
+    
+    Args:
+        user: Data registrasi (email, password, name, role)
+    
+    Returns:
+        TokenResponse: JWT token dan data user
+    
+    Raises:
+        HTTPException 400: Jika email sudah terdaftar
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        
+        # Cek apakah email sudah terdaftar
+        existing_user = await users_collection.find_one({"email": user.email})
+        if existing_user:
+            raise HTTPException(
+                status_code=400,
+                detail="Email sudah terdaftar. Silakan gunakan email lain."
+            )
+        
+        # Hash password
+        hashed_password = get_password_hash(user.password)
+        
+        # Buat dokumen user baru
+        now_str = datetime.now().isoformat()
+        new_user = {
+            "email": user.email,
+            "password": hashed_password,
+            "name": user.name,
+            "role": user.role,
+            "created_at": now_str
+        }
+        
+        # Simpan ke database
+        result = await users_collection.insert_one(new_user)
+        user_id = str(result.inserted_id)
+        
+        # Buat JWT token
+        access_token = create_access_token(
+            data={
+                "user_id": user_id,
+                "email": user.email,
+                "role": user.role
+            }
+        )
+        
+        logger.info(f"User baru terdaftar: {user.email}")
+        
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=user_id,
+                email=user.email,
+                name=user.name,
+                role=user.role,
+                created_at=now_str
+            )
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error registrasi: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.post(
+    "/api/auth/login",
+    response_model=TokenResponse,
+    tags=["Autentikasi"],
+    summary="Login user"
+)
+async def login(credentials: UserLogin):
+    """
+    Login user dengan email dan password.
+    
+    Args:
+        credentials: Email dan password
+    
+    Returns:
+        TokenResponse: JWT token dan data user
+    
+    Raises:
+        HTTPException 401: Jika email atau password salah
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        
+        # Cari user berdasarkan email
+        user = await users_collection.find_one({"email": credentials.email})
+        
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="Email atau password salah"
+            )
+        
+        # Verifikasi password
+        if not verify_password(credentials.password, user["password"]):
+            raise HTTPException(
+                status_code=401,
+                detail="Email atau password salah"
+            )
+        
+        # Buat JWT token
+        user_id = str(user["_id"])
+        access_token = create_access_token(
+            data={
+                "user_id": user_id,
+                "email": user["email"],
+                "role": user["role"]
+            }
+        )
+        
+        logger.info(f"User login: {user['email']}")
+        
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=user_id,
+                email=user["email"],
+                name=user["name"],
+                role=user["role"],
+                created_at=user["created_at"]
+            )
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error login: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.get(
+    "/api/auth/me",
+    response_model=UserResponse,
+    tags=["Autentikasi"],
+    summary="Data user yang sedang login"
+)
+async def get_me(current_user: TokenData = Depends(get_current_user)):
+    """
+    Mendapatkan data user yang sedang login berdasarkan token.
+    
+    Memerlukan JWT token di header Authorization.
+    
+    Returns:
+        UserResponse: Data user yang login
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        
+        # Cari user berdasarkan ID dari token
+        user = await users_collection.find_one({"_id": ObjectId(current_user.user_id)})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User tidak ditemukan")
+        
+        return UserResponse(
+            id=str(user["_id"]),
+            email=user["email"],
+            name=user["name"],
+            role=user["role"],
+            created_at=user["created_at"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error get me: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
 
 
 # =============================================================================
@@ -422,9 +628,18 @@ async def get_activities(
         cursor = collection.find(query).sort("_id", -1).skip(skip).limit(page_size)
         docs = await cursor.to_list(length=page_size)
         
-        # Convert ke response model
+        # Convert ke response model dengan verifikasi hash
         activities = []
         for doc in docs:
+            # Verifikasi hash untuk setiap record
+            try:
+                is_valid = verify_hash(doc)
+                hash_status = "valid" if is_valid else "invalid"
+            except Exception as e:
+                logger.warning(f"Gagal verifikasi hash untuk {doc['_id']}: {e}")
+                is_valid = None
+                hash_status = "unverified"
+            
             activities.append(ActivityResponse(
                 id=str(doc["_id"]),
                 user_id=doc["user_id"],
@@ -439,7 +654,9 @@ async def get_activities(
                 distance_km=doc.get("distance_km"),
                 energy_kwh=doc.get("energy_kwh"),
                 weight_kg=doc.get("weight_kg"),
-                money_spent=doc.get("money_spent")
+                money_spent=doc.get("money_spent"),
+                is_valid=is_valid,
+                hash_status=hash_status
             ))
         
         return ActivityListResponse(
@@ -494,6 +711,15 @@ async def get_activity(activity_id: str):
         if not doc:
             raise HTTPException(status_code=404, detail="Aktivitas tidak ditemukan")
         
+        # Verifikasi hash untuk record ini
+        try:
+            is_valid = verify_hash(doc)
+            hash_status = "valid" if is_valid else "invalid"
+        except Exception as e:
+            logger.warning(f"Gagal verifikasi hash untuk {doc['_id']}: {e}")
+            is_valid = None
+            hash_status = "unverified"
+        
         return ActivityResponse(
             id=str(doc["_id"]),
             user_id=doc["user_id"],
@@ -508,7 +734,9 @@ async def get_activity(activity_id: str):
             distance_km=doc.get("distance_km"),
             energy_kwh=doc.get("energy_kwh"),
             weight_kg=doc.get("weight_kg"),
-            money_spent=doc.get("money_spent")
+            money_spent=doc.get("money_spent"),
+            is_valid=is_valid,
+            hash_status=hash_status
         )
         
     except HTTPException:
