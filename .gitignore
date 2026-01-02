@@ -39,6 +39,7 @@ frontend-EcoLedger/node_modules/
 frontend-EcoLedger/.next/
 frontend-EcoLedger/out/
 frontend-EcoLedger/.turbo/
+**/package-lock.json  # Ignore npm lock, use pnpm-lock.yaml instead
 
 # Environment variables - DICOMMENT karena tim butuh file ini!
 # .env
