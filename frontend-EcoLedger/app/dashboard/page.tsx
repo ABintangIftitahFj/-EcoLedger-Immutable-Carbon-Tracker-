@@ -1,5 +1,6 @@
 "use client"
 export const dynamic = 'force-dynamic'
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, TrendingDown, Leaf, ShieldCheck, Bell, ArrowUpRight, Loader2 } from "lucide-react"
@@ -10,6 +11,11 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { EcoAssistant } from "@/components/eco-assistant"
 
+// --- [BARU] IMPORT KOMPONEN TUGAS S2 ---
+import { DashboardCharts } from "@/components/dashboard-charts"
+import { DashboardAuditLog } from "@/components/dashboard-audit-log"
+// ---------------------------------------
+
 export default function Dashboard() {
   const [activities, setActivities] = useState<ActivityResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,7 +24,8 @@ export default function Dashboard() {
   const [user, setUser] = useState<UserResponse | null>(null)
   const { toast } = useToast()
   const router = useRouter()
-
+  const [chartData, setChartData] = useState<any>(null) // State untuk grafik
+  const [auditLogs, setAuditLogs] = useState([])        // State untuk log
   // Get user from localStorage and setup API token
   useEffect(() => {
     const storedUser = localStorage.getItem("user")
@@ -32,9 +39,15 @@ export default function Dashboard() {
     try {
       const userData = JSON.parse(storedUser)
       setUser(userData)
+      
+      // ✅ PENTING: Set token SETIAP KALI component mount
       apiClient.setAuthToken(token)
+      
+      console.log("Token set:", token.substring(0, 20) + "...") // Debug log
     } catch (error) {
       console.error("Error parsing user data:", error)
+      localStorage.removeItem("user")
+      localStorage.removeItem("access_token")
       router.push("/login")
     }
   }, [router])
@@ -45,37 +58,46 @@ export default function Dashboard() {
     }
   }, [user])
 
-  const loadDashboardData = async () => {
+const loadDashboardData = async () => {
     if (!user) return
     
     setLoading(true)
     try {
-      // Load activities
-      const activitiesData = await apiClient.getActivities({
-        user_id: user.id,
-        page: 1,
-        page_size: 5,
-      })
+      // 1. Load activities list (sudah ada)
+      const activitiesData = await apiClient.getActivities({ user_id: user.id, page: 1, page_size: 5 })
       setActivities(activitiesData.activities)
-
-      // Calculate total emission
+      
       const total = activitiesData.activities.reduce((sum, activity) => sum + (activity.emission || 0), 0)
       setTotalEmission(total)
 
-      // Verify chain integrity
       const verification = await apiClient.verifyHashChain({ user_id: user.id })
       setVerificationStatus(verification)
+
+      // === 2. LOAD DATA CHART DARI MONGODB ===
+      const stats = await apiClient.getDashboardStats()
+      console.log('📊 Stats received:', stats) // Debug
+      console.log('📊 Pie chart:', stats.pie_chart) // Debug
+      console.log('📊 Line chart:', stats.line_chart) // Debug
+      setChartData(stats)
+
+      // === 3. LOAD AUDIT LOG DARI CASSANDRA ===
+      const logsData = await apiClient.getAuditLogs()
+      console.log('📋 Logs received:', logsData) // Debug
+      console.log('📋 Logs array:', logsData.logs) // Debug
+      setAuditLogs(logsData.logs)
+
     } catch (error: any) {
+      console.error('❌ Error loading dashboard:', error) // Debug
       toast({
         title: "Error",
-        description: "Gagal memuat data dashboard. Pastikan backend berjalan.",
+        description: error.message || "Failed to load dashboard data",
         variant: "destructive",
       })
     } finally {
       setLoading(false)
     }
   }
-
+  
   const formatDate = (isoDate: string) => {
     const date = new Date(isoDate)
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -90,7 +112,7 @@ export default function Dashboard() {
       {/* Welcome and Notification Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Halo, Eco AI Aktif! 🚀</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Halo, {user?.name || "Eco AI Aktif"}! 🚀</h1>
           <p className="text-muted-foreground">Berikut adalah ringkasan jejak karbon Anda saat ini.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -179,7 +201,36 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* ==================================================== */}
+      {/*  GRAFIK & AUDIT LOG             */}
+      {/* ==================================================== */}
+      {/* Kirim data asli ke komponen grafik */}
+      {/* Kirim data asli ke komponen grafik */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Memuat data grafik...</span>
+        </div>
+      ) : (
+        <DashboardCharts 
+          pieData={chartData?.pie_chart} 
+          lineData={chartData?.line_chart} 
+        />
+      )}
+
+      {/* Kirim data asli ke komponen log */}
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Memuat audit log...</span>
+        </div>
+      ) : (
+        <DashboardAuditLog logs={auditLogs} />
+      )}
+
       {/* Reports & Insights Section */}
+
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>

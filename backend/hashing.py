@@ -242,7 +242,63 @@ async def verify_chain(db: AsyncIOMotorDatabase) -> Dict[str, Any]:
         "message": f"Semua {total_records} record valid. Integritas data terjamin!"
     }
 
-
+async def verify_chain_for_user(db: AsyncIOMotorDatabase, user_id: str) -> Dict[str, Any]:
+    """
+    Verifikasi hash chain untuk user tertentu saja.
+    """
+    from bson import ObjectId
+    
+    try:
+        user_obj = ObjectId(user_id)
+    except:
+        user_obj = user_id
+    
+    activities_collection = db["activity_logs"]
+    
+    # Ambil semua aktivitas user, diurutkan berdasarkan timestamp
+    activities_cursor = activities_collection.find({
+        "$or": [{"user_id": user_id}, {"user_id": user_obj}]
+    }).sort("timestamp", 1)
+    
+    activities = await activities_cursor.to_list(length=None)
+    total = len(activities)
+    
+    if total == 0:
+        return {
+            "valid": True,
+            "total_records": 0,
+            "message": "Belum ada aktivitas untuk diverifikasi"
+        }
+    
+    # Verifikasi setiap record
+    previous_hash = None
+    for activity in activities:
+        # 1. Cek apakah hash record valid
+        if not verify_hash(activity):
+            return {
+                "valid": False,
+                "total_records": total,
+                "message": f"Hash tidak valid pada record {activity['_id']}",
+                "invalid_record_id": str(activity['_id'])
+            }
+        
+        # 2. Cek apakah chain tidak terputus
+        if previous_hash is not None:
+            if activity["previous_hash"] != previous_hash:
+                return {
+                    "valid": False,
+                    "total_records": total,
+                    "message": f"Chain terputus pada record {activity['_id']}",
+                    "invalid_record_id": str(activity['_id'])
+                }
+        
+        previous_hash = activity["current_hash"]
+    
+    return {
+        "valid": True,
+        "total_records": total,
+        "message": f"Semua {total} record terverifikasi dengan sukses"
+    }
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================

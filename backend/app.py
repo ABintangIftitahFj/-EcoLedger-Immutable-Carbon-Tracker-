@@ -37,9 +37,13 @@ Version: 1.0.0
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 import logging
+from bson import ObjectId
+import uuid 
+from typing import Optional, List, Dict, Any  # Pastikan Optional ada
+from hashing import generate_hash, verify_chain, verify_hash, verify_chain_for_user
 
 # Import modul internal
 from config import settings
@@ -1239,26 +1243,30 @@ async def estimate_emission(request: EmissionEstimateRequest):
     tags=["Sistem"],
     summary="Verifikasi integritas hash chain"
 )
-async def verify_hash_chain():
+async def verify_hash_chain(
+    user_id: Optional[str] = Query(None, description="Filter verifikasi untuk user tertentu"),
+    current_user: TokenData = Depends(get_current_active_user)  # ← Sudah benar TokenData
+):
     """
-    Memverifikasi integritas seluruh hash chain.
-    
-    Mengecek apakah:
-    1. Semua hash valid (data tidak diubah)
-    2. Chain tidak terputus (previous_hash cocok)
-    
-    Jika ada data yang dimanipulasi, endpoint ini akan mendeteksinya.
-    
-    Returns:
-        HashVerificationResponse: Hasil verifikasi dengan detail
-    
-    Notes:
-        - Untuk database besar, mungkin memakan waktu lama
-        - Jalankan di off-peak hours untuk production
+    Memverifikasi integritas hash chain.
+    Bisa difilter berdasarkan user_id atau verifikasi semua (admin only).
     """
     try:
         db = await get_db()
-        result = await verify_chain(db)
+        
+        # Jika ada user_id parameter, verifikasi hanya untuk user tersebut
+        if user_id:
+            # ✅ FIX: Gunakan attribute access, bukan dictionary
+            if current_user.role != "admin" and current_user.user_id != user_id:
+                raise HTTPException(status_code=403, detail="Anda hanya bisa verifikasi data sendiri")
+            
+            # Verifikasi chain untuk user tertentu
+            result = await verify_chain_for_user(db, user_id)
+        else:
+            # Verifikasi seluruh chain (hanya admin)
+            if current_user.role != "admin":
+                raise HTTPException(status_code=403, detail="Hanya admin yang bisa verifikasi seluruh chain")
+            result = await verify_chain(db)
         
         return HashVerificationResponse(
             valid=result["valid"],
@@ -1267,11 +1275,12 @@ async def verify_hash_chain():
             invalid_record_id=result.get("invalid_record_id")
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error verifikasi chain: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
-
-
+    
 # =============================================================================
 # ENDPOINT: GET ACTIVITY TYPES
 # =============================================================================
@@ -1363,6 +1372,111 @@ async def search_emission_factors(
         raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
 
 
+# ==========================================
+# ENDPOINT DASHBOARD (VERSI FIX OBJECTID & LOG)
+# ==========================================
+
+# ==========================================
+# ENDPOINT DASHBOARD (MongoDB & Cassandra)
+# ==========================================
+
+@app.get("/api/dashboard/stats")
+async def get_dashboard_stats(current_user: TokenData = Depends(get_current_active_user)):
+    """Mendapatkan statistik untuk dashboard charts (MongoDB)."""
+    user_id = current_user.user_id
+    logger.info(f"Dashboard stats request for user: {user_id}")
+    
+    try:
+        # Get database instance
+        db = await get_db()
+        activities_collection = db["activity_logs"]
+        
+        # Convert user_id to ObjectId for comparison
+        try:
+            user_obj = ObjectId(user_id)
+        except:
+            user_obj = user_id
+        
+        # Find all activities for this user
+        activities_cursor = activities_collection.find({
+            "$or": [{"user_id": user_id}, {"user_id": user_obj}]
+        })
+        activities = await activities_cursor.to_list(length=None)
+        
+        logger.info(f"Found {len(activities)} activities for user {user_id}")
+        
+        # Process data manually in Python
+        pie_data = {}  # Format: {'Transport': 100, 'Electricity': 50}
+        line_data = {}  # Format: {'2026-01-04': 150}
+        
+        for act in activities:
+            # Get category & emission
+            activity_type = act.get("activity_type", "Other")
+            emission = float(act.get("emission", 0))
+            
+            # Get date (format YYYY-MM-DD)
+            timestamp_raw = act.get("timestamp")
+            if isinstance(timestamp_raw, str):
+                date_str = timestamp_raw.split("T")[0]
+            else:
+                date_str = timestamp_raw.strftime("%Y-%m-%d") if timestamp_raw else ""
+            
+            # Add to pie data
+            pie_data[activity_type] = pie_data.get(activity_type, 0) + emission
+            
+            # Add to line data
+            if date_str:
+                line_data[date_str] = line_data.get(date_str, 0) + emission
+        
+        # Sort line chart data by date
+        sorted_dates = sorted(line_data.keys())
+        
+        return {
+            "pie_chart": {
+                "labels": list(pie_data.keys()),
+                "data": list(pie_data.values())
+            },
+            "line_chart": {
+                "labels": sorted_dates,
+                "data": [line_data[d] for d in sorted_dates]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/dashboard/logs")
+async def get_dashboard_logs_endpoint(current_user: TokenData = Depends(get_current_active_user)):
+    """Mendapatkan audit logs untuk dashboard (Cassandra)."""
+    user_id = current_user.user_id
+    logger.info(f"Dashboard logs request for user: {user_id}")
+    
+    try:
+        # Get audit logs from Cassandra service
+        all_logs = get_audit_logs(user_id=user_id, limit=100)
+        
+        # Format logs for frontend
+        logs = []
+        for log in all_logs:
+            logs.append({
+                "user": current_user.email,  # Gunakan email dari token
+                "action": log.get("action_type", "UNKNOWN"),
+                "time": log.get("activity_time"),
+                "status": "Success"
+            })
+        
+        # Sort by time (newest first)
+        logs.sort(key=lambda x: x['time'] if x['time'] else "", reverse=True)
+        
+        logger.info(f"Found {len(logs)} audit logs for user {user_id}")
+        return {"logs": logs[:10]}  # Return last 10 logs
+        
+    except Exception as e:
+        logger.error(f"Error getting audit logs: {e}", exc_info=True)
+        return {"logs": []}  # Return empty array on error instead of raising
+
 # =============================================================================
 # MAIN: Untuk menjalankan dengan Python langsung
 # =============================================================================
@@ -1379,3 +1493,4 @@ if __name__ == "__main__":
         reload=settings.is_development,
         log_level=settings.log_level.lower()
     )
+

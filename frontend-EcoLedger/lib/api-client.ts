@@ -26,10 +26,21 @@ class ApiClient {
       ...options?.headers as Record<string, string>,
     };
 
-    // Add auth token if available
-    if (this.authToken && !headers['Authorization']) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
+    // ✅ PERBAIKAN: Auto-load token dari localStorage jika belum ada
+    let token = this.authToken;
+    if (!token && typeof window !== 'undefined') {
+      token = localStorage.getItem('access_token');
+      if (token) {
+        this.authToken = token; // Cache untuk request berikutnya
+      }
     }
+
+    // Add auth token if available
+    if (token && !headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    console.log('Making request to:', endpoint, 'with auth:', !!token); // Debug
 
     const response = await fetch(url, {
       ...options,
@@ -38,6 +49,14 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      
+      // ✅ TAMBAHAN: Auto redirect ke login jika unauthorized
+      if (response.status === 401 && typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      
       throw new Error(error.detail || `HTTP ${response.status}`);
     }
 
@@ -153,6 +172,32 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // =========================================================================
+  // DASHBOARD STATS & AUDIT LOGS 
+  // =========================================================================
+
+  // Mengambil data untuk Grafik Chart.js
+  async getDashboardStats() {
+    // Kita pakai 'any' dulu untuk tipe returnnya biar tidak ribet bikin interface baru
+    return this.request<any>('/api/dashboard/stats');
+  }
+
+  // Mengambil data Audit Log
+  async getAuditLogs() {
+    return this.request<any>('/api/dashboard/logs');
+  }
+    // Tambahkan method verifyHashChain dengan parameter user_id
+  async verifyHashChain(params?: { user_id?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.user_id) queryParams.append('user_id', params.user_id);
+    
+    const query = queryParams.toString();
+    return this.request<HashVerificationResponse>(
+      `/api/verify-chain${query ? `?${query}` : ''}`
+    );
+  }
+  
 }
 
 // =============================================================================
