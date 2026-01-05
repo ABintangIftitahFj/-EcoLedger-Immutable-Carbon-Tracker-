@@ -6,25 +6,30 @@ Sistem pelacak jejak karbon dengan integritas blockchain-like menggunakan Climat
 
 - ✅ **Kalkulasi Emisi Otomatis** - Integrasi dengan Climatiq API
 - ✅ **Hash Chain Blockchain-like** - Data immutable dan terverifikasi
-- ✅ **Real-time Dashboard** - Monitoring jejak karbon secara langsung
+- ✅ **Real-time Dashboard** - Monitoring jejak karbon dengan grafik interaktif
+- ✅ **User Authentication** - JWT-based authentication dengan role management
+- ✅ **Audit Trail** - Cassandra database untuk logging aktivitas
 - ✅ **RESTful API** - Backend FastAPI dengan dokumentasi otomatis
-- ✅ **Modern Frontend** - Next.js 16 dengan TypeScript & Tailwind CSS
-- ✅ **MongoDB Database** - NoSQL untuk fleksibilitas data
+- ✅ **Modern Frontend** - Next.js 14 dengan TypeScript & Tailwind CSS
+- ✅ **Hybrid Database** - MongoDB untuk data operasional, Cassandra untuk audit logs
 
 ## 📋 Teknologi Stack
 
 ### Backend
 - **FastAPI** - Modern Python web framework
-- **MongoDB** - NoSQL database dengan Motor (async driver)
+- **MongoDB** - NoSQL database untuk data aktivitas (Motor async driver)
+- **Cassandra** - Distributed database untuk audit trail
+- **JWT Authentication** - Secure token-based authentication
 - **Climatiq API** - Database emission factor terpercaya
 - **Pydantic** - Data validation
 - **Uvicorn** - ASGI server
 
 ### Frontend
-- **Next.js 16** - React framework dengan App Router
+- **Next.js 14** - React framework dengan App Router
 - **TypeScript** - Type-safe JavaScript
 - **Tailwind CSS** - Utility-first CSS framework
 - **Shadcn/ui** - High-quality React components
+- **Chart.js** - Interactive charts untuk visualisasi data
 - **Lucide Icons** - Beautiful icon set
 
 ## 🛠️ Instalasi & Setup
@@ -75,18 +80,23 @@ APP_PORT=8000
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-### 4. Setup Database (MongoDB)
+### 4. Setup All Services dengan Docker (Recommended)
 
-**Opsi A: Gunakan Docker (Recommended)**
 ```bash
 cd infrastructures
 docker-compose up -d
 ```
 
-**Opsi B: MongoDB Lokal**
-- Install MongoDB dari https://www.mongodb.com/try/download/community
-- Jalankan MongoDB service
-- Default port: 27017
+Ini akan menjalankan:
+- ✅ **MongoDB** (port 27017) - Database utama
+- ✅ **Cassandra** (port 9042) - Audit trail database
+- ✅ **Backend** (port 8000) - FastAPI server
+- ✅ **Frontend** (port 3000) - Next.js application
+
+**Opsi Manual (Development):**
+Jika ingin run manual tanpa Docker, pastikan MongoDB dan Cassandra sudah running:
+- MongoDB: https://www.mongodb.com/try/download/community
+- Cassandra: https://cassandra.apache.org/download/
 
 ### 5. Setup Frontend
 
@@ -141,20 +151,33 @@ Frontend akan berjalan di: **http://localhost:3000**
 
 ## 📖 Cara Penggunaan
 
-### 1. Akses Dashboard
-Buka browser dan kunjungi `http://localhost:3000/dashboard`
+### 1. Register & Login
+Buka browser dan kunjungi `http://localhost:3000`
+- Klik **"Register"** untuk membuat akun baru
+- Login dengan email dan password
+- Anda akan mendapat JWT token yang tersimpan di localStorage
 
-### 2. Catat Aktivitas
-- Klik tombol **"Catat Aktivitas"**
+### 2. Akses Dashboard
+Setelah login, Anda akan diarahkan ke dashboard yang menampilkan:
+- 📊 **Grafik Tren Emisi** - Line chart emisi harian dari MongoDB
+- 🥧 **Grafik Sumber Polusi** - Pie chart kategori emisi
+- 📋 **Audit Log Table** - Riwayat aktivitas dari Cassandra
+- 🔐 **Hash Chain Verification** - Status integritas data
+
+### 3. Catat Aktivitas
+- Navigasi ke **"Catat Aktivitas"**
 - Pilih tipe aktivitas (transportasi/energi)
 - Masukkan parameter (jarak/energi)
 - Klik **"Hitung Estimasi"** untuk preview (opsional)
 - Klik **"Simpan Aktivitas"**
+- Data otomatis tersimpan ke MongoDB dengan hash chain
+- Aktivitas tercatat di Cassandra audit log
 
-### 3. Lihat Riwayat
+### 4. Lihat Riwayat
 - Navigasi ke **"Riwayat"**
 - Lihat semua aktivitas dengan hash verification
-- Gunakan search untuk filter data
+- Gunakan pagination untuk navigasi data
+- Filter berdasarkan kategori atau tanggal
 
 ## 🔧 API Endpoints
 
@@ -307,12 +330,26 @@ lsof -ti:3000 | xargs kill -9
 
 ## 🎯 Roadmap
 
-- [ ] User Authentication (JWT)
-- [ ] Multi-user support
-- [ ] Data visualization dengan charts
+- [x] User Authentication (JWT)
+- [x] Multi-user support
+- [x] Data visualization dengan charts (Chart.js)
+- [x] Cassandra integration untuk audit log
+- [x] Docker Compose deployment
 - [ ] Export PDF reports
-- [ ] Cassandra integration untuk audit log
+- [ ] AI-powered recommendations
 - [ ] Mobile app (React Native)
+- [ ] Real-time notifications
+
+## 📚 Dokumentasi
+
+Dokumentasi lengkap tersedia di folder root:
+
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Index semua dokumentasi
+- **[QUICK_START.md](QUICK_START.md)** - Panduan cepat
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Deployment dengan Docker
+- **[FEATURES_DOCUMENTATION.md](FEATURES_DOCUMENTATION.md)** - Detail implementasi fitur
+- **[API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md)** - API reference
+- **[INTEGRATION_SUCCESS.md](INTEGRATION_SUCCESS.md)** - Test results
 
 ## 👥 Team
 

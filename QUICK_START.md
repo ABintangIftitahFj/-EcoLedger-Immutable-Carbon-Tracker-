@@ -2,25 +2,44 @@
 
 Panduan singkat untuk menjalankan aplikasi EcoLedger.
 
-## ⚡ Cara Tercepat
+## ⚡ Cara Tercepat (Docker Compose)
 
-### 1. Start MongoDB (jika menggunakan Docker)
+### 1. Start All Services
 ```bash
 cd infrastructures
 docker-compose up -d
 ```
 
-### 2. Jalankan Aplikasi dengan Script
+Docker Compose akan menjalankan:
+- ✅ **MongoDB** (port 27017) - Database utama
+- ✅ **Cassandra** (port 9042) - Audit trail database
+- ✅ **Backend** (port 8000) - FastAPI server
+- ✅ **Frontend** (port 3000) - Next.js application
+
+### 2. Cek Status Services
 ```bash
-./start.sh
+docker-compose ps
 ```
 
-Script akan otomatis:
-- ✅ Cek MongoDB
-- ✅ Setup virtual environment Python
-- ✅ Install dependencies
-- ✅ Start backend (port 8000)
-- ✅ Start frontend (port 3000)
+Semua container harus dalam status "Up":
+```
+NAME            STATUS
+eco_mongo       Up
+eco_cassandra   Up
+eco_backend     Up
+eco_frontend    Up
+```
+
+### 3. Akses Aplikasi
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+### 4. Register & Login
+1. Buka http://localhost:3000
+2. Klik "Register" dan buat akun baru
+3. Login dengan kredensial yang baru dibuat
+4. Anda akan diarahkan ke dashboard
 
 ## 🔧 Manual Setup (Alternatif)
 
@@ -47,37 +66,92 @@ pnpm dev      # atau npm run dev
 - **API Docs (Swagger)**: http://localhost:8000/docs
 - **API Docs (ReDoc)**: http://localhost:8000/redoc
 
+## 🔍 Monitoring Services
+
+### Cek Logs
+```bash
+# Backend logs
+docker logs eco_backend -f
+
+# Frontend logs
+docker logs eco_frontend -f
+
+# MongoDB logs
+docker logs eco_mongo -f
+
+# Cassandra logs
+docker logs eco_cassandra -f
+```
+
+### Stop Services
+```bash
+cd infrastructures
+docker-compose down
+```
+
+### Restart Services
+```bash
+docker-compose restart
+```
+
 ## ✅ Test Koneksi
 
 ```bash
 # Test backend health
 curl http://localhost:8000/api/health
 
-# Test frontend
-open http://localhost:3000/dashboard
+# Atau buka browser
+open http://localhost:3000
 ```
 
 ## 🧪 Test API dengan cURL
 
-### Create Activity
+### 1. Register User
+```bash
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123",
+    "name": "Test User"
+  }'
+```
+
+### 2. Login
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+Copy `access_token` dari response untuk request berikutnya.
+
+### 3. Create Activity (dengan token)
 ```bash
 curl -X POST http://localhost:8000/api/activities \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -d '{
-    "user_id": "user123",
     "activity_type": "car_petrol_medium",
     "distance_km": 25.5,
     "description": "Test perjalanan"
   }'
 ```
 
-### Get Activities
+### 4. Get Dashboard Stats
 ```bash
-curl http://localhost:8000/api/activities?user_id=user123
+curl http://localhost:8000/api/dashboard/stats \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-### Get Activity Types
+### 5. Get Audit Logs
 ```bash
+curl http://localhost:8000/api/dashboard/logs \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
 curl http://localhost:8000/api/activity-types
 ```
 

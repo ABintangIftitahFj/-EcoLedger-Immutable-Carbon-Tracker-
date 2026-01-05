@@ -19,7 +19,71 @@ FastAPI provides automatic interactive API documentation:
 
 ## Authentication
 
-Currently, the API is open (no authentication required). Authentication with JWT will be added in future versions.
+EcoLedger menggunakan **JWT (JSON Web Token)** untuk authentication.
+
+### Register
+```http
+POST /api/auth/register
+```
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "name": "John Doe"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "507f1f77bcf86cd799439011",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "user"
+}
+```
+
+### Login
+```http
+POST /api/auth/login
+```
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "507f1f77bcf86cd799439011",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "role": "user"
+  }
+}
+```
+
+### Using Authentication
+
+Semua protected endpoints memerlukan header:
+```
+Authorization: Bearer <access_token>
+```
+
+Contoh:
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  http://localhost:8000/api/activities
+```
 
 ## Endpoints
 
@@ -207,6 +271,68 @@ Search for emission factors in the Climatiq database.
 - `category` (optional): Filter by category
 - `region` (optional): Filter by region (e.g., "ID" for Indonesia)
 - `limit` (optional, default: 10): Maximum results
+
+---
+
+### Dashboard Endpoints
+
+#### Get Dashboard Statistics
+```http
+GET /api/dashboard/stats
+```
+
+Mendapatkan data untuk grafik dashboard dari MongoDB.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "pie_chart": {
+    "labels": ["Transport", "Electricity", "Food"],
+    "data": [45.5, 23.2, 15.8]
+  },
+  "line_chart": {
+    "labels": ["2026-01-03", "2026-01-04", "2026-01-05"],
+    "data": [45.5, 67.2, 89.1]
+  }
+}
+```
+
+#### Get Audit Logs
+```http
+GET /api/dashboard/logs
+```
+
+Mendapatkan audit logs dari Cassandra untuk user yang sedang login.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "logs": [
+    {
+      "user": "john@example.com",
+      "action": "CREATE",
+      "time": "2026-01-05T10:30:00",
+      "status": "Success"
+    },
+    {
+      "user": "john@example.com",
+      "action": "LOGIN",
+      "time": "2026-01-05T09:15:00",
+      "status": "Success"
+    }
+  ]
+}
+```
 
 ---
 
