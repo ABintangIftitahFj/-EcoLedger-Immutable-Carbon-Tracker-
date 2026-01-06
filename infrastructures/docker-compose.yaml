@@ -79,28 +79,30 @@ services:
     depends_on:
       - backend
 
-  # 6. One-shot init script for MongoDB: creates collections & indexes
-  mongo-init:
+  # 6. Combined init script for MongoDB & Cassandra
+  db-init:
     image: python:3.11-slim
-    container_name: eco_mongo_init
+    container_name: eco_db_init
     restart: "no"
     volumes:
       - ./init_db.py:/init_db.py:ro
-    depends_on:
-      - mongodb
-    entrypoint: ["sh","-c","pip install pymongo bcrypt --no-cache-dir && python /init_db.py"]
-
-  # 7. One-shot init script for Cassandra: creates keyspace & tables
-  cassandra-init:
-    image: python:3.11-slim
-    container_name: eco_cassandra_init
-    restart: "no"
-    volumes:
       - ./init_cassandra.py:/init_cassandra.py:ro
     depends_on:
+      mongodb:
+        condition: service_started
       cassandra:
         condition: service_healthy
-    entrypoint: ["sh","-c","pip install cassandra-driver --no-cache-dir && python /init_cassandra.py"]
+    entrypoint: 
+      - sh
+      - -c
+      - |
+        echo "📦 Installing dependencies..."
+        pip install pymongo bcrypt cassandra-driver --no-cache-dir
+        echo "🗄️  Initializing MongoDB..."
+        python /init_db.py
+        echo "🗄️  Initializing Cassandra..."
+        python /init_cassandra.py
+        echo "✅ Database initialization complete!"
 
 volumes:
   mongo_data:

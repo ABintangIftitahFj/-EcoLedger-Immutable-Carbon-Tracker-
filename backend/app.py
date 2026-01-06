@@ -64,7 +64,9 @@ from models import (
     UserCreate,
     UserLogin,
     UserResponse,
-    TokenResponse
+    TokenResponse,
+    ProfileUpdate,
+    PasswordChange
 )
 from climatiq_service import climatiq_service, ClimatiqAPIError
 from activity_mapper import ActivityMapper
@@ -391,6 +393,178 @@ async def get_me(current_user: TokenData = Depends(get_current_user)):
         raise
     except Exception as e:
         logger.error(f"Error get me: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.put(
+    "/api/auth/profile",
+    response_model=UserResponse,
+    tags=["Autentikasi"],
+    summary="Update profil user"
+)
+async def update_profile(
+    profile: ProfileUpdate,
+    current_user: TokenData = Depends(get_current_active_user)
+):
+    """Update profil user yang sedang login."""
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        
+        # Cek apakah email baru sudah digunakan oleh user lain
+        if profile.email != current_user.email:
+            existing_user = await users_collection.find_one({"email": profile.email})
+            if existing_user and str(existing_user["_id"]) != current_user.user_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Email sudah digunakan oleh user lain"
+                )
+        
+        # Update user
+        update_result = await users_collection.update_one(
+            {"_id": ObjectId(current_user.user_id)},
+            {"$set": {
+                "name": profile.name,
+                "email": profile.email
+            }}
+        )
+        
+        if update_result.modified_count == 0 and update_result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User tidak ditemukan")
+        
+        # Get updated user
+        user = await users_collection.find_one({"_id": ObjectId(current_user.user_id)})
+        
+        # Log audit
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="UPDATE",
+            entity="user",
+            entity_id=current_user.user_id,
+            changes={"name": profile.name, "email": profile.email},
+            description=f"User updated profile"
+        )
+        
+        return UserResponse(
+            id=str(user["_id"]),
+            email=user["email"],
+            name=user["name"],
+            role=user["role"],
+            created_at=user["created_at"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error update profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.put(
+    "/api/auth/change-password",
+    tags=["Autentikasi"],
+    summary="Ubah password"
+)
+async def change_password(
+    password_data: PasswordChange,
+    current_user: TokenData = Depends(get_current_active_user)
+):
+    """Ubah password user yang sedang login."""
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        
+        # Get user
+        user = await users_collection.find_one({"_id": ObjectId(current_user.user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User tidak ditemukan")
+        
+        # Verify current password
+        if not verify_password(password_data.current_password, user["password"]):
+            raise HTTPException(
+                status_code=400,
+                detail="Password saat ini tidak benar"
+            )
+        
+        # Hash new password
+        new_hashed_password = get_password_hash(password_data.new_password)
+        
+        # Update password
+        await users_collection.update_one(
+            {"_id": ObjectId(current_user.user_id)},
+            {"$set": {"password": new_hashed_password}}
+        )
+        
+        # Log audit
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="UPDATE",
+            entity="user",
+            entity_id=current_user.user_id,
+            description="User changed password"
+        )
+        
+        return {"message": "Password berhasil diubah"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error change password: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.delete(
+    "/api/auth/delete-account",
+    tags=["Autentikasi"],
+    summary="Hapus akun user"
+)
+async def delete_account(
+    current_user: TokenData = Depends(get_current_active_user)
+):
+    """
+    Hapus akun user yang sedang login.
+    - Menghapus user dari MongoDB
+    - Menghapus semua activity logs user dari MongoDB
+    - Audit log di Cassandra TETAP ADA (tidak dihapus)
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        activities_collection = db["activity_logs"]
+        
+        # Hapus semua activity logs user
+        deleted_activities = await activities_collection.delete_many(
+            {"user_id": current_user.user_id}
+        )
+        
+        # Hapus user
+        delete_result = await users_collection.delete_one(
+            {"_id": ObjectId(current_user.user_id)}
+        )
+        
+        if delete_result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User tidak ditemukan")
+        
+        # Log audit (ini tetap ada di Cassandra)
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="DELETE",
+            entity="user",
+            entity_id=current_user.user_id,
+            description=f"User {current_user.email} deleted their account. {deleted_activities.deleted_count} activities deleted."
+        )
+        
+        logger.info(f"User {current_user.user_id} deleted account with {deleted_activities.deleted_count} activities")
+        
+        return {
+            "message": "Akun berhasil dihapus",
+            "activities_deleted": deleted_activities.deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error delete account: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
 
 
