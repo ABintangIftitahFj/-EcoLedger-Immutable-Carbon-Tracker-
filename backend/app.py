@@ -37,8 +37,11 @@ Version: 1.0.0
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from bson import ObjectId
+
+# Timezone WIB (UTC+7)
+WIB = timezone(timedelta(hours=7))
 import logging
 from bson import ObjectId
 import uuid 
@@ -220,7 +223,7 @@ async def register(user: UserCreate):
         hashed_password = get_password_hash(user.password)
         
         # Buat dokumen user baru
-        now_str = datetime.now().isoformat()
+        now_str = datetime.now(WIB).isoformat()
         new_user = {
             "email": user.email,
             "password": hashed_password,
@@ -836,7 +839,7 @@ async def health_check():
     
     return HealthResponse(
         status=overall_status,
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(WIB).isoformat(),
         database=db_status,
         climatiq_api=climatiq_status
     )
@@ -919,7 +922,7 @@ async def create_activity(
         # =====================================================================
         # STEP 3: Generate timestamp dan hash
         # =====================================================================
-        now_str = datetime.now().isoformat()
+        now_str = datetime.now(WIB).isoformat()
         
         # Ambil hash terakhir dari database untuk membuat chain
         db = await get_db()

@@ -1,8 +1,12 @@
 import os
 import time
 import datetime
+from datetime import timezone, timedelta
 import bcrypt
 from pymongo import MongoClient, ASCENDING, DESCENDING
+
+# Timezone WIB (UTC+7)
+WIB = timezone(timedelta(hours=7))
 
 print("⏳ Menunggu database siap...")
 
@@ -50,7 +54,7 @@ def create_admin_user():
         "password": get_password_hash(admin_password),
         "name": "Administrator",
         "role": "admin",
-        "created_at": datetime.datetime.utcnow().isoformat()
+        "created_at": datetime.datetime.now(WIB).isoformat()
     }
     
     db.users.insert_one(new_admin)

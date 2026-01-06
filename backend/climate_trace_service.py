@@ -16,7 +16,10 @@ import httpx
 from typing import List, Dict, Optional, Any
 import logging
 from functools import lru_cache
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+# Timezone WIB (UTC+7)
+WIB = timezone(timedelta(hours=7))
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +98,7 @@ class ClimateTraceService:
         Returns:
             Country rankings with emissions data
         """
-        current_year = datetime.now().year
+        current_year = datetime.now(WIB).year
         
         params = {
             "gas": gas,
@@ -139,7 +142,7 @@ class ClimateTraceService:
         Returns:
             List of emission sources
         """
-        current_year = datetime.now().year
+        current_year = datetime.now(WIB).year
         
         params = {
             "year": year or current_year - 1,
@@ -177,7 +180,7 @@ class ClimateTraceService:
         Returns:
             Source details with emissions timeseries
         """
-        current_year = datetime.now().year
+        current_year = datetime.now(WIB).year
         
         params = {
             "gas": gas,
@@ -214,7 +217,7 @@ class ClimateTraceService:
         Returns:
             Aggregated emissions data
         """
-        current_year = datetime.now().year
+        current_year = datetime.now(WIB).year
         
         params = {
             "gas": gas,

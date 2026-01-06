@@ -88,7 +88,19 @@ services:
       - ./init_db.py:/init_db.py:ro
     depends_on:
       - mongodb
-    entrypoint: ["sh","-c","pip install pymongo --no-cache-dir && python /init_db.py"]
+    entrypoint: ["sh","-c","pip install pymongo bcrypt --no-cache-dir && python /init_db.py"]
+
+  # 7. One-shot init script for Cassandra: creates keyspace & tables
+  cassandra-init:
+    image: python:3.11-slim
+    container_name: eco_cassandra_init
+    restart: "no"
+    volumes:
+      - ./init_cassandra.py:/init_cassandra.py:ro
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    entrypoint: ["sh","-c","pip install cassandra-driver --no-cache-dir && python /init_cassandra.py"]
 
 volumes:
   mongo_data:

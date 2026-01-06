@@ -14,7 +14,7 @@ Version: 1.0.0
 =============================================================================
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -23,6 +23,9 @@ from pydantic import BaseModel
 from config import settings
 from database import get_db
 import logging
+
+# Timezone WIB (UTC+7)
+WIB = timezone(timedelta(hours=7))
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +92,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(WIB) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+        expire = datetime.now(WIB) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     
     to_encode.update({"exp": expire})
     
