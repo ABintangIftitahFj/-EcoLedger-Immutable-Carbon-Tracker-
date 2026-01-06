@@ -100,7 +100,7 @@ export default function LedgerPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1 container py-12">
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
@@ -131,7 +131,7 @@ export default function LedgerPage() {
           </div>
 
           {/* Search */}
-          <div className="relative flex gap-2">
+          <div className="relative flex gap-2 max-w-5xl mx-auto w-full">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -148,7 +148,7 @@ export default function LedgerPage() {
           </div>
 
           {/* Table */}
-          <div className="border rounded-xl overflow-hidden">
+          <div className="border rounded-xl overflow-hidden max-w-5xl mx-auto w-full">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>

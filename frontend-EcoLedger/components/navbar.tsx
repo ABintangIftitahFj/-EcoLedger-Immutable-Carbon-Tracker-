@@ -117,6 +117,14 @@ export function Navbar() {
           {/* Auth buttons */}
           {user ? (
             <div className="hidden md:flex items-center gap-2">
+              {user.role === "admin" && (
+                <Link href="/admin">
+                  <Button size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    Dashboard Admin
+                  </Button>
+                </Link>
+              )}
               <Link href="/dashboard">
                 <Button variant="outline" size="sm" className="gap-2 bg-transparent">
                   <User className="h-4 w-4" />
@@ -183,6 +191,14 @@ export function Navbar() {
             {/* Mobile auth */}
             {user ? (
               <>
+                {user.role === "admin" && (
+                  <Link href="/admin" onClick={() => setIsMenuOpen(false)}>
+                    <Button size="sm" className="w-full gap-2">
+                      <User className="h-4 w-4" />
+                      Dashboard Admin
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full gap-2 bg-transparent">
                     <User className="h-4 w-4" />
