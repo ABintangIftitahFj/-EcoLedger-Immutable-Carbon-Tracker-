@@ -95,7 +95,7 @@ export function Navbar() {
             Buku Besar Publik
           </Link>
           <Link href="/global-emissions" className="text-sm font-medium transition-colors hover:text-primary">
-            🌍 Global Emissions
+            Global Emissions
           </Link>
           <Link href="/tentang" className="text-sm font-medium transition-colors hover:text-primary">
             Tentang Kami
