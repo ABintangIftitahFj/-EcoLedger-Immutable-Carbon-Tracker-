@@ -147,7 +147,7 @@ export default function PengaturanPage() {
 
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
-      '⚠️ PERINGATAN: Tindakan ini akan menghapus akun dan semua data aktivitas Anda secara permanen!\n\nAudit log akan tetap tersimpan untuk keperluan sistem.\n\nApakah Anda yakin ingin menghapus akun?'
+      'PERINGATAN: Tindakan ini akan menghapus akun dan semua data aktivitas Anda secara permanen!\n\nAudit log akan tetap tersimpan untuk keperluan sistem.\n\nApakah Anda yakin ingin menghapus akun?'
     )
     
     if (!confirmed) return

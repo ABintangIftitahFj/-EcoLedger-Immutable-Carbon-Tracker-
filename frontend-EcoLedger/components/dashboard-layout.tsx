@@ -1,14 +1,33 @@
+"use client"
+
 import type React from "react"
 import { Navbar } from "@/components/navbar"
 import { LayoutDashboard, History, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { apiClient } from "@/lib/api-client"
 
 export function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
+
+  const handleLogout = () => {
+    const confirmed = window.confirm(
+      'Apakah Anda yakin ingin keluar?\n\nAnda perlu login kembali untuk mengakses dashboard.'
+    )
+    
+    if (!confirmed) return
+
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("user")
+    apiClient.setAuthToken(null)
+    router.push("/")
+  }
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
@@ -36,7 +55,11 @@ export function DashboardLayout({
             </Link>
           </nav>
           <div className="p-4 border-t">
-            <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10">
+            <Button 
+              variant="ghost" 
+              onClick={handleLogout}
+              className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10"
+            >
               <LogOut className="h-4 w-4" />
               Keluar
             </Button>

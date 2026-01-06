@@ -41,6 +41,12 @@ export default function AdminLayout({
     }, [router])
 
     const handleLogout = () => {
+        const confirmed = window.confirm(
+            'Apakah Anda yakin ingin keluar?\n\nAnda perlu login kembali untuk mengakses admin panel.'
+        )
+        
+        if (!confirmed) return
+
         localStorage.removeItem("access_token")
         localStorage.removeItem("user")
         router.push("/")

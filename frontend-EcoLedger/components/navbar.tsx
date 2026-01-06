@@ -28,6 +28,12 @@ export function Navbar() {
   }, [pathname]) // Re-check when pathname changes
 
   const handleLogout = () => {
+    const confirmed = window.confirm(
+      'Apakah Anda yakin ingin keluar?\n\nAnda perlu login kembali untuk mengakses dashboard.'
+    )
+    
+    if (!confirmed) return
+
     localStorage.removeItem("access_token")
     localStorage.removeItem("user")
     apiClient.setAuthToken(null)
@@ -134,8 +140,9 @@ export function Navbar() {
                   )}
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1">
+              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:bg-destructive hover:text-destructive-foreground">
                 <LogOut className="h-4 w-4" />
+                Keluar
               </Button>
             </div>
           ) : (
@@ -205,7 +212,15 @@ export function Navbar() {
                     {user.name}
                   </Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    handleLogout()
+                  }} 
+                  className="w-full gap-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
                   <LogOut className="h-4 w-4" />
                   Keluar
                 </Button>
