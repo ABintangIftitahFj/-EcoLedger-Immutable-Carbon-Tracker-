@@ -57,6 +57,7 @@ services:
       - ../backend:/app
     depends_on:
       - mongodb
+      - cassandra
 
   # 5. Frontend: Next.js (development server)
   frontend:
@@ -68,7 +69,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ../.env
+      - ../.env.docker
     environment:
       # Use internal Docker network to reach backend (important for inter-container communication)
       - NEXT_PUBLIC_API_URL=http://localhost:8000
