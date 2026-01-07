@@ -30,22 +30,35 @@ export default function AdminDashboardPage() {
 
     const loadAdminStats = async () => {
         try {
+            const token = localStorage.getItem('access_token')
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+            // Load admin stats from API
+            const statsResponse = await fetch(`${baseUrl}/api/admin/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+
+            if (!statsResponse.ok) {
+                throw new Error('Failed to load admin stats')
+            }
+
+            const statsData = await statsResponse.json()
+
             // Load all activities (admin can see all)
             const activitiesResult = await apiClient.getActivities({
                 page: 1,
                 page_size: 100,
             })
 
-            const totalEmission = activitiesResult.activities.reduce(
-                (sum, a) => sum + a.emission, 0
-            )
             const validCount = activitiesResult.activities.filter(a => a.is_valid === true).length
             const invalidCount = activitiesResult.activities.filter(a => a.is_valid === false).length
 
             setStats({
-                totalUsers: 5, // TODO: Add API endpoint to get user count
-                totalActivities: activitiesResult.total,
-                totalEmission,
+                totalUsers: statsData.total_users,
+                totalActivities: statsData.total_activities,
+                totalEmission: statsData.total_emission,
                 validActivities: validCount,
                 invalidActivities: invalidCount,
             })

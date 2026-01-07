@@ -53,7 +53,7 @@ infrastructures/cassandra_data/
 # Seed scripts (untuk development/testing saja)
 infrastructures/seed_users_activities.py
 infrastructures/seed_10days_activities.py
-
+infrastructures/seed_10users_with_activities.py
 # OS files
 .DS_Store
 Thumbs.db

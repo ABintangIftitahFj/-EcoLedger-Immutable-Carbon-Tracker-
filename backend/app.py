@@ -1585,7 +1585,7 @@ async def create_activity(
 async def get_activities(
     user_id: str = Query(None, description="Filter berdasarkan user ID"),
     page: int = Query(1, ge=1, description="Nomor halaman"),
-    page_size: int = Query(10, ge=1, le=100, description="Jumlah item per halaman")
+    page_size: int = Query(10, ge=1, le=1000, description="Jumlah item per halaman (max 1000)")
 ):
     """
     Mendapatkan daftar aktivitas dengan pagination dan filter.

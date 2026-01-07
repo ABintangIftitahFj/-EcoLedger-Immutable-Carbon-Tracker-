@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [verificationStatus, setVerificationStatus] = useState<HashVerificationResponse | null>(null)
   const [totalEmission, setTotalEmission] = useState(0)
+  const [totalActivitiesCount, setTotalActivitiesCount] = useState(0) // NEW: Total count
   const [user, setUser] = useState<UserResponse | null>(null)
   const { toast } = useToast()
   const router = useRouter()
@@ -95,40 +96,52 @@ const loadDashboardData = async () => {
     if (!user) return
     
     setLoading(true)
+    
+    // 1. Load recent activities for display (5 items)
     try {
-      // 1. Load activities list (sudah ada)
       const activitiesData = await apiClient.getActivities({ user_id: user.id, page: 1, page_size: 5 })
       setActivities(activitiesData.activities)
-      
-      const total = activitiesData.activities.reduce((sum, activity) => sum + (activity.emission || 0), 0)
+    } catch (err: any) {
+      console.error('❌ Failed to load recent activities:', err?.message || err)
+    }
+    
+    // 2. Load ALL activities to calculate total emission
+    try {
+      const allActivitiesData = await apiClient.getActivities({ user_id: user.id, page: 1, page_size: 1000 })
+      const total = allActivitiesData.activities.reduce((sum, activity) => sum + (activity.emission || 0), 0)
       setTotalEmission(total)
+      setTotalActivitiesCount(allActivitiesData.total) // Set total count from API
+    } catch (err: any) {
+      console.error('❌ Failed to load all activities:', err?.message || err)
+    }
 
+    // 3. Verify hash chain
+    try {
       const verification = await apiClient.verifyHashChain({ user_id: user.id })
       setVerificationStatus(verification)
-
-      // === 2. LOAD DATA CHART DARI MONGODB ===
-      const stats = await apiClient.getDashboardStats()
-      console.log('📊 Stats received:', stats) // Debug
-      console.log('📊 Pie chart:', stats.pie_chart) // Debug
-      console.log('📊 Line chart:', stats.line_chart) // Debug
-      setChartData(stats)
-
-      // === 3. LOAD AUDIT LOG DARI CASSANDRA ===
-      const logsData = await apiClient.getAuditLogs()
-      console.log('📋 Logs received:', logsData) // Debug
-      console.log('📋 Logs array:', logsData.logs) // Debug
-      setAuditLogs(logsData.logs)
-
-    } catch (error: any) {
-      console.error('❌ Error loading dashboard:', error) // Debug
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load dashboard data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+    } catch (err: any) {
+      console.error('❌ Failed to verify hash chain:', err?.message || err)
     }
+
+    // === 4. LOAD DATA CHART DARI MONGODB ===
+    try {
+      const stats = await apiClient.getDashboardStats()
+      console.log('✅ Stats loaded:', stats)
+      setChartData(stats)
+    } catch (err: any) {
+      console.error('❌ Failed to load dashboard stats:', err?.message || err)
+    }
+
+    // === 5. LOAD AUDIT LOG DARI CASSANDRA ===
+    try {
+      const logsData = await apiClient.getAuditLogs()
+      console.log('✅ Logs loaded:', logsData.logs?.length, 'entries')
+      setAuditLogs(logsData.logs)
+    } catch (err: any) {
+      console.error('❌ Failed to load audit logs:', err?.message || err)
+    }
+    
+    setLoading(false)
   }
   
   const formatDate = (isoDate: string) => {
@@ -180,7 +193,7 @@ const loadDashboardData = async () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">{totalEmission.toFixed(2)} kg CO2e</div>
-                <p className="text-xs text-muted-foreground">{activities.length} aktivitas tercatat</p>
+                <p className="text-xs text-muted-foreground">{totalActivitiesCount} aktivitas tercatat</p>
               </>
             )}
           </CardContent>
