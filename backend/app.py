@@ -1098,14 +1098,6 @@ async def get_audit_trail(
         List of audit log records
     """
     try:
-        # Log akses audit trail
-        log_audit(
-            user_id=current_user.user_id,
-            action_type="READ",
-            entity="audit_logs",
-            description=f"Admin {current_user.email} mengakses audit trail"
-        )
-        
         # Get audit logs from Cassandra
         logs = get_audit_logs(user_id=user_id, limit=limit)
         
