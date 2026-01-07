@@ -66,7 +66,8 @@ from models import (
     UserResponse,
     TokenResponse,
     ProfileUpdate,
-    PasswordChange
+    PasswordChange,
+    OrganisasiResponse
 )
 from climatiq_service import climatiq_service, ClimatiqAPIError
 from activity_mapper import ActivityMapper
@@ -190,6 +191,85 @@ app.add_middleware(
 # ENDPOINT: AUTHENTICATION
 # =============================================================================
 
+async def get_or_create_organisasi(db, nama_organisasi: str, created_by_user_id: str) -> Optional[Dict]:
+    """
+    Helper function untuk mendapatkan atau membuat organisasi baru.
+    
+    Args:
+        db: Database instance
+        nama_organisasi: Nama organisasi yang dicari/dibuat
+        created_by_user_id: User ID yang membuat organisasi (jika baru)
+    
+    Returns:
+        Dict organisasi dengan _id, nama, created_at, dll
+    """
+    if not nama_organisasi or not nama_organisasi.strip():
+        return None
+    
+    nama_organisasi = nama_organisasi.strip()
+    organisasi_collection = db["organisasi"]
+    
+    # Cari organisasi berdasarkan nama (case-insensitive)
+    existing_org = await organisasi_collection.find_one({
+        "nama": {"$regex": f"^{nama_organisasi}$", "$options": "i"}
+    })
+    
+    if existing_org:
+        logger.info(f"Organisasi ditemukan: {nama_organisasi}")
+        return existing_org
+    
+    # Buat organisasi baru jika belum ada
+    now_str = datetime.now(WIB).isoformat()
+    new_org = {
+        "nama": nama_organisasi,
+        "created_at": now_str,
+        "created_by": created_by_user_id
+    }
+    
+    result = await organisasi_collection.insert_one(new_org)
+    new_org["_id"] = result.inserted_id
+    
+    logger.info(f"Organisasi baru dibuat: {nama_organisasi} dengan ID {result.inserted_id}")
+    
+    # Log audit
+    log_audit(
+        user_id=created_by_user_id,
+        action_type="CREATE",
+        entity="organisasi",
+        entity_id=str(result.inserted_id),
+        description=f"Organisasi baru dibuat: {nama_organisasi}"
+    )
+    
+    return new_org
+
+
+async def get_organisasi_by_id(db, organisasi_id: str) -> Optional[Dict]:
+    """Get organisasi by ID and count members."""
+    if not organisasi_id:
+        return None
+    
+    try:
+        organisasi_collection = db["organisasi"]
+        users_collection = db["users"]
+        
+        org = await organisasi_collection.find_one({"_id": ObjectId(organisasi_id)})
+        if not org:
+            return None
+        
+        # Count jumlah anggota
+        jumlah_anggota = await users_collection.count_documents({"organisasi_id": organisasi_id})
+        
+        return {
+            "id": str(org["_id"]),
+            "nama": org["nama"],
+            "created_at": org["created_at"],
+            "jumlah_anggota": jumlah_anggota
+        }
+    except Exception as e:
+        logger.error(f"Error getting organisasi: {e}")
+        return None
+
+
 @app.post(
     "/api/auth/register",
     response_model=TokenResponse,
@@ -224,12 +304,23 @@ async def register(user: UserCreate):
         # Hash password
         hashed_password = get_password_hash(user.password)
         
+        # Handle organisasi: get or create
+        organisasi_id = None
+        organisasi_data = None
+        if user.organisasi:
+            # Buat user temporary ID untuk organisasi creation
+            temp_user_id = "temp_" + str(uuid.uuid4())
+            org = await get_or_create_organisasi(db, user.organisasi, temp_user_id)
+            if org:
+                organisasi_id = str(org["_id"])
+        
         # Buat dokumen user baru
         now_str = datetime.now(WIB).isoformat()
         new_user = {
             "email": user.email,
             "password": hashed_password,
             "name": user.name,
+            "organisasi_id": organisasi_id,
             "role": user.role,
             "created_at": now_str
         }
@@ -237,6 +328,19 @@ async def register(user: UserCreate):
         # Simpan ke database
         result = await users_collection.insert_one(new_user)
         user_id = str(result.inserted_id)
+        
+        # Update organisasi created_by jika baru dibuat
+        if organisasi_id and user.organisasi:
+            org_collection = db["organisasi"]
+            org_doc = await org_collection.find_one({"_id": ObjectId(organisasi_id)})
+            if org_doc and org_doc.get("created_by", "").startswith("temp_"):
+                await org_collection.update_one(
+                    {"_id": ObjectId(organisasi_id)},
+                    {"$set": {"created_by": user_id}}
+                )
+            
+            # Get organisasi data untuk response
+            organisasi_data = await get_organisasi_by_id(db, organisasi_id)
         
         # Buat JWT token
         access_token = create_access_token(
@@ -248,12 +352,16 @@ async def register(user: UserCreate):
         )
         
         # FR-11: Log audit ke Cassandra
+        audit_desc = f"User baru terdaftar: {user.email}"
+        if organisasi_data:
+            audit_desc += f" di organisasi {organisasi_data['nama']}"
+        
         log_audit(
             user_id=user_id,
             action_type="REGISTER",
             entity="user",
             entity_id=user_id,
-            description=f"User baru terdaftar: {user.email}"
+            description=audit_desc
         )
         
         logger.info(f"User baru terdaftar: {user.email}")
@@ -265,6 +373,7 @@ async def register(user: UserCreate):
                 id=user_id,
                 email=user.email,
                 name=user.name,
+                organisasi=organisasi_data,
                 role=user.role,
                 created_at=now_str
             )
@@ -337,6 +446,11 @@ async def login(credentials: UserLogin):
         
         logger.info(f"User login: {user['email']}")
         
+        # Get organisasi data jika ada
+        organisasi_data = None
+        if user.get("organisasi_id"):
+            organisasi_data = await get_organisasi_by_id(db, user["organisasi_id"])
+        
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
@@ -344,6 +458,7 @@ async def login(credentials: UserLogin):
                 id=user_id,
                 email=user["email"],
                 name=user["name"],
+                organisasi=organisasi_data,
                 role=user["role"],
                 created_at=user["created_at"]
             )
@@ -381,10 +496,16 @@ async def get_me(current_user: TokenData = Depends(get_current_user)):
         if not user:
             raise HTTPException(status_code=404, detail="User tidak ditemukan")
         
+        # Get organisasi data jika ada
+        organisasi_data = None
+        if user.get("organisasi_id"):
+            organisasi_data = await get_organisasi_by_id(db, user["organisasi_id"])
+        
         return UserResponse(
             id=str(user["_id"]),
             email=user["email"],
             name=user["name"],
+            organisasi=organisasi_data,
             role=user["role"],
             created_at=user["created_at"]
         )
@@ -420,13 +541,25 @@ async def update_profile(
                     detail="Email sudah digunakan oleh user lain"
                 )
         
+        # Handle organisasi: get or create
+        organisasi_id = None
+        organisasi_data = None
+        if profile.organisasi:
+            org = await get_or_create_organisasi(db, profile.organisasi, current_user.user_id)
+            if org:
+                organisasi_id = str(org["_id"])
+                organisasi_data = await get_organisasi_by_id(db, organisasi_id)
+        
         # Update user
+        update_data = {
+            "name": profile.name,
+            "email": profile.email,
+            "organisasi_id": organisasi_id
+        }
+        
         update_result = await users_collection.update_one(
             {"_id": ObjectId(current_user.user_id)},
-            {"$set": {
-                "name": profile.name,
-                "email": profile.email
-            }}
+            {"$set": update_data}
         )
         
         if update_result.modified_count == 0 and update_result.matched_count == 0:
@@ -435,20 +568,31 @@ async def update_profile(
         # Get updated user
         user = await users_collection.find_one({"_id": ObjectId(current_user.user_id)})
         
-        # Log audit
+        # Log audit with organisasi info
+        audit_changes = {"name": profile.name, "email": profile.email}
+        audit_desc = f"User updated profile"
+        if profile.organisasi:
+            audit_changes["organisasi"] = profile.organisasi
+            audit_desc += f" - Organisasi: {profile.organisasi}"
+        
         log_audit(
             user_id=current_user.user_id,
             action_type="UPDATE",
             entity="user",
             entity_id=current_user.user_id,
-            changes={"name": profile.name, "email": profile.email},
-            description=f"User updated profile"
+            changes=audit_changes,
+            description=audit_desc
         )
+        
+        # Get organisasi data untuk response
+        if not organisasi_data and user.get("organisasi_id"):
+            organisasi_data = await get_organisasi_by_id(db, user["organisasi_id"])
         
         return UserResponse(
             id=str(user["_id"]),
             email=user["email"],
             name=user["name"],
+            organisasi=organisasi_data,
             role=user["role"],
             created_at=user["created_at"]
         )
@@ -510,6 +654,267 @@ async def change_password(
         raise
     except Exception as e:
         logger.error(f"Error change password: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+# =============================================================================
+# ENDPOINT: ORGANISASI
+# =============================================================================
+
+@app.get(
+    "/api/organisasi",
+    response_model=List[OrganisasiResponse],
+    tags=["Organisasi"],
+    summary="Daftar semua organisasi"
+)
+async def get_organisasi_list():
+    """
+    Mendapatkan daftar semua organisasi yang terdaftar.
+    
+    Returns:
+        List[OrganisasiResponse]: Daftar organisasi dengan jumlah anggota
+    """
+    try:
+        db = await get_db()
+        organisasi_collection = db["organisasi"]
+        users_collection = db["users"]
+        
+        # Get all organisasi
+        orgs = await organisasi_collection.find().sort("nama", 1).to_list(length=None)
+        
+        result = []
+        for org in orgs:
+            # Count members
+            jumlah_anggota = await users_collection.count_documents({"organisasi_id": str(org["_id"])})
+            
+            result.append(OrganisasiResponse(
+                id=str(org["_id"]),
+                nama=org["nama"],
+                created_at=org["created_at"],
+                jumlah_anggota=jumlah_anggota
+            ))
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error getting organisasi list: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.put(
+    "/api/admin/organisasi/{organisasi_id}",
+    response_model=OrganisasiResponse,
+    tags=["Admin - Organisasi"],
+    summary="Update organisasi (Admin only)"
+)
+async def update_organisasi(
+    organisasi_id: str,
+    nama_baru: str = None,
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Update nama organisasi (Admin only).
+    
+    Args:
+        organisasi_id: ID organisasi yang akan diupdate
+        nama_baru: Nama baru untuk organisasi
+    
+    Returns:
+        OrganisasiResponse: Data organisasi yang sudah diupdate
+    """
+    try:
+        db = await get_db()
+        organisasi_collection = db["organisasi"]
+        users_collection = db["users"]
+        
+        if not nama_baru or not nama_baru.strip():
+            raise HTTPException(status_code=400, detail="Nama organisasi tidak boleh kosong")
+        
+        # Cek apakah organisasi exists
+        org = await organisasi_collection.find_one({"_id": ObjectId(organisasi_id)})
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisasi tidak ditemukan")
+        
+        # Cek apakah nama baru sudah digunakan organisasi lain (case-insensitive)
+        existing_org = await organisasi_collection.find_one({
+            "_id": {"$ne": ObjectId(organisasi_id)},
+            "nama": {"$regex": f"^{nama_baru.strip()}$", "$options": "i"}
+        })
+        if existing_org:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Nama organisasi '{nama_baru}' sudah digunakan"
+            )
+        
+        # Update nama
+        await organisasi_collection.update_one(
+            {"_id": ObjectId(organisasi_id)},
+            {"$set": {"nama": nama_baru.strip()}}
+        )
+        
+        # Count members - organisasi_id disimpan sebagai STRING di users collection
+        jumlah_anggota = await users_collection.count_documents({"organisasi_id": str(organisasi_id)})
+        
+        # Log audit
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="UPDATE",
+            entity="organisasi",
+            entity_id=organisasi_id,
+            changes={"nama": nama_baru},
+            description=f"Admin updated organisasi: {org['nama']} -> {nama_baru}"
+        )
+        
+        logger.info(f"Admin {current_user.user_id} updated organisasi {organisasi_id}: {org['nama']} -> {nama_baru}")
+        
+        return OrganisasiResponse(
+            id=str(organisasi_id),
+            nama=nama_baru.strip(),
+            created_at=org["created_at"],
+            jumlah_anggota=jumlah_anggota
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating organisasi: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.delete(
+    "/api/admin/organisasi/{organisasi_id}",
+    tags=["Admin - Organisasi"],
+    summary="Delete organisasi (Admin only)"
+)
+async def delete_organisasi(
+    organisasi_id: str,
+    force: bool = False,
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Hapus organisasi (Admin only).
+    
+    Warning: Jika organisasi memiliki anggota, gunakan parameter force=true untuk menghapus.
+    Semua users akan otomatis terlepas dari organisasi (organisasi_id = null).
+    
+    Args:
+        organisasi_id: ID organisasi yang akan dihapus
+        force: True untuk force delete organisasi dengan anggota (default: False)
+    
+    Returns:
+        Message konfirmasi dengan jumlah users yang terpengaruh
+    """
+    try:
+        db = await get_db()
+        organisasi_collection = db["organisasi"]
+        users_collection = db["users"]
+        
+        # Cek apakah organisasi exists
+        org = await organisasi_collection.find_one({"_id": ObjectId(organisasi_id)})
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisasi tidak ditemukan")
+        
+        # Count members yang akan terpengaruh - organisasi_id disimpan sebagai STRING
+        affected_users = await users_collection.count_documents({"organisasi_id": str(organisasi_id)})
+        
+        # Cegah delete jika ada anggota dan tidak force
+        if affected_users > 0 and not force:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Organisasi memiliki {affected_users} anggota. Gunakan force=true untuk tetap menghapus."
+            )
+        
+        # Set organisasi_id users menjadi null
+        if affected_users > 0:
+            await users_collection.update_many(
+                {"organisasi_id": str(organisasi_id)},
+                {"$set": {"organisasi_id": None}}
+            )
+        
+        # Delete organisasi
+        await organisasi_collection.delete_one({"_id": ObjectId(organisasi_id)})
+        
+        # Log audit
+        log_audit(
+            user_id=current_user.user_id,
+            action_type="DELETE",
+            entity="organisasi",
+            entity_id=organisasi_id,
+            description=f"Admin deleted organisasi: {org['nama']} (affected {affected_users} users, force={force})"
+        )
+        
+        logger.info(f"Admin {current_user.user_id} deleted organisasi {organisasi_id}: {org['nama']} (force={force})")
+        
+        return {
+            "message": f"Organisasi '{org['nama']}' berhasil dihapus",
+            "affected_users": affected_users
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting organisasi: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
+
+
+@app.get(
+    "/api/admin/organisasi/{organisasi_id}/members",
+    tags=["Admin - Organisasi"],
+    summary="Get organisasi members (Admin only)"
+)
+async def get_organisasi_members(
+    organisasi_id: str,
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Get daftar semua members dari organisasi (Admin only).
+    
+    Args:
+        organisasi_id: ID organisasi
+    
+    Returns:
+        List of users in the organisasi
+    """
+    try:
+        db = await get_db()
+        users_collection = db["users"]
+        organisasi_collection = db["organisasi"]
+        
+        # Cek apakah organisasi exists
+        org = await organisasi_collection.find_one({"_id": ObjectId(organisasi_id)})
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisasi tidak ditemukan")
+        
+        # Get all members - organisasi_id disimpan sebagai STRING di users collection
+        members = await users_collection.find(
+            {"organisasi_id": str(organisasi_id)},
+            {"password": 0}  # Exclude password
+        ).to_list(length=None)
+        
+        # Format response
+        result = []
+        for member in members:
+            result.append({
+                "id": str(member["_id"]),
+                "email": member["email"],
+                "name": member["name"],
+                "role": member["role"],
+                "created_at": member["created_at"]
+            })
+        
+        return {
+            "organisasi": {
+                "id": str(org["_id"]),
+                "nama": org["nama"]
+            },
+            "members": result,
+            "total_members": len(result)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting organisasi members: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error internal: {str(e)}")
 
 

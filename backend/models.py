@@ -25,6 +25,29 @@ from datetime import datetime
 
 
 # =============================================================================
+# MODEL ORGANISASI
+# =============================================================================
+
+class OrganisasiResponse(BaseModel):
+    """Model response data organisasi."""
+    
+    id: str = Field(..., description="Organisasi ID")
+    nama: str = Field(..., description="Nama organisasi")
+    created_at: str = Field(..., description="Waktu dibuat")
+    jumlah_anggota: int = Field(default=0, description="Jumlah anggota")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "507f1f77bcf86cd799439011",
+                "nama": "PT. Green Energy Indonesia",
+                "created_at": "2024-12-29T10:00:00",
+                "jumlah_anggota": 5
+            }
+        }
+
+
+# =============================================================================
 # MODEL AUTENTIKASI: User dan Token
 # =============================================================================
 
@@ -34,6 +57,7 @@ class UserCreate(BaseModel):
     email: EmailStr = Field(..., description="Email user (harus unik)")
     password: str = Field(..., min_length=6, description="Password minimal 6 karakter")
     name: str = Field(..., min_length=2, description="Nama lengkap user")
+    organisasi: Optional[str] = Field(None, description="Nama organisasi/perusahaan user")
     role: Literal["admin", "user"] = Field(
         default="user",
         description="Role user: 'admin' atau 'user'"
@@ -45,6 +69,7 @@ class UserCreate(BaseModel):
                 "email": "user@example.com",
                 "password": "password123",
                 "name": "John Doe",
+                "organisasi": "PT. Green Energy Indonesia",
                 "role": "user"
             }
         }
@@ -71,6 +96,7 @@ class UserResponse(BaseModel):
     id: str = Field(..., description="User ID")
     email: str = Field(..., description="Email user")
     name: str = Field(..., description="Nama lengkap")
+    organisasi: Optional[OrganisasiResponse] = Field(None, description="Data organisasi user")
     role: str = Field(..., description="Role user (admin/user)")
     created_at: str = Field(..., description="Waktu registrasi")
     
@@ -80,6 +106,7 @@ class UserResponse(BaseModel):
                 "id": "507f1f77bcf86cd799439011",
                 "email": "user@example.com",
                 "name": "John Doe",
+                "organisasi": "PT. Green Energy Indonesia",
                 "role": "user",
                 "created_at": "2024-12-29T10:00:00"
             }
@@ -113,6 +140,7 @@ class ProfileUpdate(BaseModel):
     """Model untuk update profil user."""
     name: str = Field(..., min_length=2, description="Nama lengkap user")
     email: EmailStr = Field(..., description="Email user")
+    organisasi: Optional[str] = Field(None, description="Nama organisasi/perusahaan user")
     
     class Config:
         json_schema_extra = {

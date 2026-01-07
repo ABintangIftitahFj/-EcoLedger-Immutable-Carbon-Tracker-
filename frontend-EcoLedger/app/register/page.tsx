@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
@@ -9,17 +9,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, UserPlus, Leaf, AlertCircle, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react"
-import { apiClient } from "@/lib/api-client"
+import { Loader2, UserPlus, Leaf, AlertCircle, CheckCircle2, XCircle, Eye, EyeOff, Building2 } from "lucide-react"
+import { apiClient, OrganisasiResponse } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 
 export default function RegisterPage() {
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [organisasiList, setOrganisasiList] = useState<OrganisasiResponse[]>([])
+    const [showOrganisasiDropdown, setShowOrganisasiDropdown] = useState(false)
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        organisasi: "",
         password: "",
         confirmPassword: "",
     })
@@ -32,6 +35,29 @@ export default function RegisterPage() {
 
     const router = useRouter()
     const { toast } = useToast()
+
+    useEffect(() => {
+        loadOrganisasiList()
+        
+        // Close dropdown when clicking outside
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            if (!target.closest('#organisasi-container')) {
+                setShowOrganisasiDropdown(false)
+            }
+        }
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [])
+
+    const loadOrganisasiList = async () => {
+        try {
+            const data = await apiClient.getOrganisasiList()
+            setOrganisasiList(data)
+        } catch (error) {
+            console.error('Failed to load organisasi list:', error)
+        }
+    }
 
     const showAlert = (type: "success" | "error" | "warning", title: string, message: string) => {
         setAlert({ type, title, message })
@@ -110,6 +136,7 @@ export default function RegisterPage() {
             const result = await apiClient.register({
                 name: formData.name,
                 email: formData.email,
+                organisasi: formData.organisasi || undefined,
                 password: formData.password,
                 role: "user",
             })
@@ -235,6 +262,62 @@ export default function RegisterPage() {
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className={fieldErrors.email ? "border-red-500 focus:ring-red-500" : ""}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="organisasi">Organisasi/Perusahaan (Opsional)</Label>
+                                <div id="organisasi-container" className="relative">
+                                    <Input
+                                        id="organisasi"
+                                        type="text"
+                                        placeholder="Pilih atau ketik nama organisasi"
+                                        value={formData.organisasi}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, organisasi: e.target.value })
+                                            setShowOrganisasiDropdown(true)
+                                        }}
+                                        onFocus={() => setShowOrganisasiDropdown(true)}
+                                        className="pr-10"
+                                    />
+                                    <Building2 className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    
+                                    {/* Dropdown List */}
+                                    {showOrganisasiDropdown && organisasiList.length > 0 && (
+                                        <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                                            {organisasiList
+                                                .filter(org => 
+                                                    org.nama.toLowerCase().includes(formData.organisasi.toLowerCase())
+                                                )
+                                                .map((org) => (
+                                                    <button
+                                                        key={org.id}
+                                                        type="button"
+                                                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center justify-between group"
+                                                        onClick={() => {
+                                                            setFormData({ ...formData, organisasi: org.nama })
+                                                            setShowOrganisasiDropdown(false)
+                                                        }}
+                                                    >
+                                                        <span className="font-medium">{org.nama}</span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {org.jumlah_anggota} anggota
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            {formData.organisasi && 
+                                             !organisasiList.some(org => 
+                                                org.nama.toLowerCase() === formData.organisasi.toLowerCase()
+                                             ) && (
+                                                <div className="px-3 py-2 text-sm text-muted-foreground border-t">
+                                                    💡 "{formData.organisasi}" akan dibuat sebagai organisasi baru
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Pilih dari organisasi yang ada atau ketik nama baru
+                                </p>
                             </div>
 
                             <div className="space-y-2">

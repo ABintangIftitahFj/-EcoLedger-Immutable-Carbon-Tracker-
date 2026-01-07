@@ -10,8 +10,16 @@ Dokumentasi lengkap fitur-fitur yang sudah diimplementasikan di EcoLedger.
 - **Features**:
   - Email validation
   - Password hashing dengan bcrypt
+  - **Organisasi Management**: Pilih organisasi existing atau buat baru
   - Automatic role assignment (user/admin)
   - Data tersimpan di MongoDB
+  - Audit log di Cassandra
+
+**Organisasi Features:**
+- Dropdown list organisasi yang sudah ada
+- Auto-create organisasi baru jika tidak ditemukan
+- Case-insensitive matching untuk nama organisasi
+- Menampilkan jumlah anggota per organisasi
 
 ### User Login
 - **Endpoint**: `POST /api/auth/login`
@@ -21,10 +29,66 @@ Dokumentasi lengkap fitur-fitur yang sudah diimplementasikan di EcoLedger.
   - Token expiry: 24 hours (configurable)
   - Token tersimpan di localStorage
   - Auto-redirect ke dashboard setelah login
+  - Return organisasi data dalam response
+
+### Profile Management
+- **Endpoint**: `PUT /api/auth/profile`
+- **Frontend**: `/dashboard/pengaturan`
+- **Features**:
+  - Update nama dan email
+  - **Update organisasi**: Join organisasi existing atau buat baru
+  - Dropdown autocomplete untuk pilih organisasi
+  - Real-time display jumlah anggota organisasi
+  - Audit log setiap perubahan
 
 ### Role-Based Access Control
 - **User Role**: Akses dashboard, catat aktivitas, lihat riwayat sendiri
 - **Admin Role**: Semua akses user + admin panel, lihat semua user, audit logs
+
+---
+
+## 🏢 Organisasi Management
+
+### Get Organisasi List
+- **Endpoint**: `GET /api/organisasi`
+- **Response**: Array of organisasi dengan jumlah anggota
+- **Features**:
+  - Sorted alphabetically by nama
+  - Real-time member count
+  - Used in registration & profile forms
+
+### Organisasi Logic
+```python
+# Auto-create or join existing organisasi
+if organisasi_name exists (case-insensitive):
+    link user to existing organisasi
+else:
+    create new organisasi
+    link user to new organisasi
+    
+# All changes logged to Cassandra audit
+```
+
+### Database Structure (MongoDB)
+```javascript
+// Collection: organisasi
+{
+  "_id": ObjectId,
+  "nama": "PT Green Energy",
+  "created_at": "2026-01-07T...",
+  "created_by": "user_id"
+}
+
+// Collection: users (updated)
+{
+  "_id": ObjectId,
+  "email": "user@example.com",
+  "name": "John Doe",
+  "organisasi_id": "org_id", // Reference to organisasi._id
+  "role": "user",
+  "created_at": "..."
+}
+```
 
 ---
 

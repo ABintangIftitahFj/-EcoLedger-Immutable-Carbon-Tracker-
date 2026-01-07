@@ -5,14 +5,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { User, Bell, Shield, Trash2 } from "lucide-react"
+import { User, Bell, Shield, Trash2, Building2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { apiClient, OrganisasiResponse } from "@/lib/api-client"
+
+interface OrganisasiData {
+  id: string
+  nama: string
+  created_at: string
+  jumlah_anggota: number
+}
 
 interface UserData {
   id: string
   name: string
   email: string
+  organisasi?: OrganisasiData
   role: string
 }
 
@@ -21,6 +30,8 @@ export default function PengaturanPage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [organisasiList, setOrganisasiList] = useState<OrganisasiResponse[]>([])
+  const [showOrganisasiDropdown, setShowOrganisasiDropdown] = useState(false)
   
   // Form states
   const [name, setName] = useState("")
@@ -32,7 +43,27 @@ export default function PengaturanPage() {
 
   useEffect(() => {
     fetchUserData()
+    loadOrganisasiList()
+    
+    // Close dropdown when clicking outside
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('#organisasi-container')) {
+        setShowOrganisasiDropdown(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
   }, [])
+
+  const loadOrganisasiList = async () => {
+    try {
+      const data = await apiClient.getOrganisasiList()
+      setOrganisasiList(data)
+    } catch (error) {
+      console.error('Failed to load organisasi list:', error)
+    }
+  }
 
   const fetchUserData = async () => {
     try {
@@ -50,9 +81,18 @@ export default function PengaturanPage() {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('User data loaded:', data)
         setUserData(data)
         setName(data.name)
         setEmail(data.email)
+        // Set organisasi dari response
+        if (data.organisasi && data.organisasi.nama) {
+          setOrganization(data.organisasi.nama)
+          console.log('Organisasi set:', data.organisasi.nama)
+        } else {
+          setOrganization('')
+          console.log('No organisasi found')
+        }
       } else {
         localStorage.removeItem('token')
         router.push('/login')
@@ -68,13 +108,20 @@ export default function PengaturanPage() {
     setSaving(true)
     try {
       const token = localStorage.getItem('access_token')
+      const payload = { 
+        name, 
+        email,
+        organisasi: organization.trim() || undefined
+      }
+      console.log('Saving profile with payload:', payload)
+      
       const response = await fetch('http://localhost:8000/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, email })
+        body: JSON.stringify(payload)
       })
 
       if (response.ok) {
@@ -233,12 +280,59 @@ export default function PengaturanPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="organization">Organisasi (Opsional)</Label>
-            <Input 
-              id="organization" 
-              placeholder="Nama perusahaan atau organisasi" 
-              value={organization}
-              onChange={(e) => setOrganization(e.target.value)}
-            />
+            <div id="organisasi-container" className="relative">
+              <Input 
+                id="organization" 
+                placeholder="Pilih atau ketik nama organisasi" 
+                value={organization}
+                onChange={(e) => {
+                  setOrganization(e.target.value)
+                  setShowOrganisasiDropdown(true)
+                }}
+                onFocus={() => setShowOrganisasiDropdown(true)}
+                className="pr-10"
+              />
+              <Building2 className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              
+              {/* Dropdown List */}
+              {showOrganisasiDropdown && organisasiList.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                  {organisasiList
+                    .filter(org => 
+                      org.nama.toLowerCase().includes(organization.toLowerCase())
+                    )
+                    .map((org) => (
+                      <button
+                        key={org.id}
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center justify-between group"
+                        onClick={() => {
+                          setOrganization(org.nama)
+                          setShowOrganisasiDropdown(false)
+                        }}
+                      >
+                        <span className="font-medium">{org.nama}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {org.jumlah_anggota} anggota
+                        </span>
+                      </button>
+                    ))}
+                  {organization && 
+                   !organisasiList.some(org => 
+                      org.nama.toLowerCase() === organization.toLowerCase()
+                   ) && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground border-t">
+                      💡 "{organization}" akan dibuat sebagai organisasi baru
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {userData?.organisasi && (
+              <p className="text-xs text-muted-foreground">
+                Tergabung dalam: <strong>{userData.organisasi.nama}</strong> ({userData.organisasi.jumlah_anggota} anggota)
+              </p>
+            )}
           </div>
           <Button onClick={handleSaveProfile} disabled={saving}>
             {saving ? 'Menyimpan...' : 'Simpan Perubahan'}

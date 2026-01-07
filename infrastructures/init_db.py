@@ -53,6 +53,7 @@ def create_admin_user():
         "email": admin_email,
         "password": get_password_hash(admin_password),
         "name": "Administrator",
+        "organisasi_id": None,
         "role": "admin",
         "created_at": datetime.datetime.now(WIB).isoformat()
     }
@@ -75,12 +76,14 @@ try:
                     "email": {"bsonType": "string"},
                     "password": {"bsonType": "string"},
                     "name": {"bsonType": "string"},
+                    "organisasi_id": {"bsonType": ["string", "null"]},
                     "role": {"enum": ["user", "admin"]},
                     "created_at": {"bsonType": "string"}
                 }
             }
         })
         db.users.create_index([("email", ASCENDING)], unique=True)
+        db.users.create_index([("organisasi_id", ASCENDING)])
         print("✅ MongoDB: Collection 'users' created.")
 
     # Create Activity Logs
@@ -89,6 +92,22 @@ try:
         db.activity_logs.create_index([("user_id", ASCENDING), ("timestamp", DESCENDING)])
         db.activity_logs.create_index([("current_hash", ASCENDING)])
         print("✅ MongoDB: Collection 'activity_logs' created.")
+
+    # Create Organisasi Collection
+    if "organisasi" not in db.list_collection_names():
+        db.create_collection("organisasi", validator={
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": ["nama", "created_at", "created_by"],
+                "properties": {
+                    "nama": {"bsonType": "string"},
+                    "created_at": {"bsonType": "string"},
+                    "created_by": {"bsonType": "string"}
+                }
+            }
+        })
+        db.organisasi.create_index([("nama", ASCENDING)])
+        print("✅ MongoDB: Collection 'organisasi' created.")
 
     # Create default admin user
     create_admin_user()

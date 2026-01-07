@@ -90,6 +90,14 @@ class ApiClient {
   }
 
   // =========================================================================
+  // ORGANISASI
+  // =========================================================================
+
+  async getOrganisasiList() {
+    return this.request<OrganisasiResponse[]>('/api/organisasi');
+  }
+
+  // =========================================================================
   // HEALTH & SYSTEM
   // =========================================================================
 
@@ -204,10 +212,18 @@ class ApiClient {
 // TYPES - Authentication
 // =============================================================================
 
+export interface OrganisasiResponse {
+  id: string;
+  nama: string;
+  created_at: string;
+  jumlah_anggota: number;
+}
+
 export interface UserRegister {
   email: string;
   password: string;
   name: string;
+  organisasi?: string;
   role?: 'admin' | 'user';
 }
 
@@ -220,6 +236,7 @@ export interface UserResponse {
   id: string;
   email: string;
   name: string;
+  organisasi?: OrganisasiResponse;
   role: string;
   created_at: string;
 }

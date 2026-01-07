@@ -56,12 +56,38 @@ Selamat datang di dokumentasi EcoLedger! Pilih dokumen yang sesuai dengan kebutu
 **Untuk**: Developer yang ingin memahami implementasi
 **Highlight**:
 - 🔐 Authentication & Authorization (JWT)
+- 🏢 **Organisasi Management** (Multi-tenant system)
 - 📊 Dashboard dengan Charts (MongoDB aggregation)
 - 📋 Audit Trail (Cassandra)
 - 🔗 Hash Chain verification
 - 🔌 Climatiq API integration
 - 🗄️ Database schemas (MongoDB & Cassandra)
 - 🎨 Frontend architecture
+
+### 4.1 **ORGANISASI_FEATURE.md** ⭐ NEW!
+**Isi**: Dokumentasi lengkap sistem organisasi multi-tenant
+**Untuk**: Developer yang ingin memahami fitur organisasi
+**Highlight**:
+- 🏢 Auto-create/join organisasi system
+- 📝 Dropdown autocomplete implementation
+- 🔧 Backend helper functions (get_or_create_organisasi)
+- 🎨 Frontend components & UX
+- 📊 Database schema (MongoDB organisasi collection)
+- 🔍 Query examples & use cases
+- 🚀 Future enhancements & migration guide
+
+### 4.2 **ADMIN_ORGANISASI_DOCUMENTATION.md** ⭐ NEW!
+**Isi**: Dokumentasi admin panel untuk kelola organisasi
+**Untuk**: Developer & Admin yang manage organisasi
+**Highlight**:
+- 🔧 3 Admin endpoints (UPDATE, DELETE, GET members)
+- 🎨 Frontend admin page `/admin/organisasi`
+- ⚠️ Safety features (force delete parameter)
+- 🐛 Bug fixes & troubleshooting guide
+- 📊 Complete implementation details
+- ✅ Testing checklist
+- 🔍 Common issues & solutions
+- 📝 Query patterns (string vs ObjectId)
 
 ### 5. **API_DOCUMENTATION.md**
 **Isi**: Referensi lengkap semua API endpoints

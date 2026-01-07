@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS activity_audit (
     entity_id text,
     changes map<text, text>,
     ip_address text,
+    user_name text,
+    user_organisasi text,
     description text,
     PRIMARY KEY ((user_id), activity_time, audit_id)
 ) WITH CLUSTERING ORDER BY (activity_time DESC);

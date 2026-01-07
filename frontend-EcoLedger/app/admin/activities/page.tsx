@@ -9,17 +9,32 @@ import { useState, useEffect } from "react"
 import { apiClient, ActivityResponse } from "@/lib/api-client"
 
 export default function AdminActivitiesPage() {
-    const [activities, setActivities] = useState<ActivityResponse[]>([])
+    const [allActivities, setAllActivities] = useState<ActivityResponse[]>([])
+    const [filteredActivities, setFilteredActivities] = useState<ActivityResponse[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [total, setTotal] = useState(0)
+    const [isSearching, setIsSearching] = useState(false)
     const PAGE_SIZE = 15
 
     useEffect(() => {
-        loadActivities()
-    }, [page])
+        if (!isSearching) {
+            loadActivities()
+        }
+    }, [page, isSearching])
+
+    // Apply search filter whenever searchQuery changes
+    useEffect(() => {
+        if (searchQuery.trim()) {
+            loadAllActivitiesForSearch()
+        } else {
+            setIsSearching(false)
+            setPage(1)
+            loadActivities()
+        }
+    }, [searchQuery])
 
     const loadActivities = async () => {
         setLoading(true)
@@ -29,7 +44,8 @@ export default function AdminActivitiesPage() {
                 page_size: PAGE_SIZE,
             })
 
-            setActivities(result.activities)
+            setAllActivities(result.activities)
+            setFilteredActivities(result.activities)
             setTotal(result.total)
             setTotalPages(Math.ceil(result.total / PAGE_SIZE))
         } catch (error) {
@@ -39,17 +55,48 @@ export default function AdminActivitiesPage() {
         }
     }
 
-    const handleSearch = () => {
-        if (searchQuery) {
-            const filtered = activities.filter(
+    const loadAllActivitiesForSearch = async () => {
+        setLoading(true)
+        setIsSearching(true)
+        try {
+            // Load SEMUA data dengan multiple requests karena backend limit 100 per page
+            let allData: ActivityResponse[] = []
+            let currentPage = 1
+            let hasMore = true
+            const maxPageSize = 100 // Backend limit
+            
+            while (hasMore) {
+                const result = await apiClient.getActivities({
+                    page: currentPage,
+                    page_size: maxPageSize,
+                })
+                
+                allData = [...allData, ...result.activities]
+                
+                // Check if there are more pages
+                if (result.activities.length < maxPageSize || allData.length >= result.total) {
+                    hasMore = false
+                } else {
+                    currentPage++
+                }
+            }
+
+            setAllActivities(allData)
+            
+            // Filter berdasarkan search query
+            const filtered = allData.filter(
                 (a) =>
                     a.activity_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     a.user_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    a.current_hash.toLowerCase().includes(searchQuery.toLowerCase())
+                    a.current_hash.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (a.description && a.description.toLowerCase().includes(searchQuery.toLowerCase()))
             )
-            setActivities(filtered)
-        } else {
-            loadActivities()
+            setFilteredActivities(filtered)
+            setTotal(allData.length)
+        } catch (error) {
+            console.error("Failed to load activities:", error)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -87,27 +134,46 @@ export default function AdminActivitiesPage() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Cari berdasarkan User ID, aktivitas, atau hash..."
+                        placeholder="Cari berdasarkan User ID, aktivitas, deskripsi, atau hash..."
                         className="pl-10"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     />
                 </div>
-                <Button onClick={handleSearch}>Cari</Button>
+                {searchQuery && (
+                    <Button variant="outline" onClick={() => setSearchQuery("")}>
+                        Clear
+                    </Button>
+                )}
             </div>
 
             {/* Stats */}
             <div className="flex gap-4 text-sm">
-                <span className="text-muted-foreground">
-                    Total: <strong className="text-foreground">{total}</strong> aktivitas
-                </span>
-                <span className="text-green-500">
-                    Valid: <strong>{activities.filter(a => a.is_valid === true).length}</strong>
-                </span>
-                <span className="text-red-500">
-                    Invalid: <strong>{activities.filter(a => a.is_valid === false).length}</strong>
-                </span>
+                {searchQuery ? (
+                    <>
+                        <span className="text-blue-500">
+                            Hasil pencarian: <strong>{filteredActivities.length}</strong> dari {total} aktivitas
+                        </span>
+                        <span className="text-green-500">
+                            Valid: <strong>{filteredActivities.filter(a => a.is_valid === true).length}</strong>
+                        </span>
+                        <span className="text-red-500">
+                            Invalid: <strong>{filteredActivities.filter(a => a.is_valid === false).length}</strong>
+                        </span>
+                    </>
+                ) : (
+                    <>
+                        <span className="text-muted-foreground">
+                            Total: <strong className="text-foreground">{total}</strong> aktivitas
+                        </span>
+                        <span className="text-green-500">
+                            Valid: <strong>{filteredActivities.filter(a => a.is_valid === true).length}</strong>
+                        </span>
+                        <span className="text-red-500">
+                            Invalid: <strong>{filteredActivities.filter(a => a.is_valid === false).length}</strong>
+                        </span>
+                    </>
+                )}
             </div>
 
             {/* Activities Table */}
@@ -120,9 +186,9 @@ export default function AdminActivitiesPage() {
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
-                    ) : activities.length === 0 ? (
+                    ) : filteredActivities.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
-                            Belum ada aktivitas tercatat.
+                            {searchQuery ? "Tidak ada aktivitas yang sesuai dengan pencarian." : "Belum ada aktivitas tercatat."}
                         </div>
                     ) : (
                         <Table>
@@ -137,7 +203,7 @@ export default function AdminActivitiesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {activities.map((activity) => (
+                                {filteredActivities.map((activity) => (
                                     <TableRow key={activity.id}>
                                         <TableCell className="font-mono text-xs">
                                             {activity.current_hash.substring(0, 12)}...
@@ -178,7 +244,7 @@ export default function AdminActivitiesPage() {
             </Card>
 
             {/* Pagination */}
-            {!loading && activities.length > 0 && (
+            {!loading && !searchQuery && filteredActivities.length > 0 && (
                 <div className="flex items-center justify-center gap-2">
                     <Button
                         variant="outline"

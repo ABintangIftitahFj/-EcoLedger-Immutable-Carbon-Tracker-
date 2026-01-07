@@ -8,13 +8,16 @@ Sistem pelacak jejak karbon dengan integritas blockchain-like menggunakan Climat
 - ✅ **Hash Chain Blockchain-like** - Data immutable dan terverifikasi
 - ✅ **Real-time Dashboard** - Monitoring jejak karbon dengan grafik interaktif
 - ✅ **User Authentication** - JWT-based authentication dengan role management
-- ✅ **Profile Management** - Update profile, ganti password, hapus akun
+- ✅ **Organisasi Management** - Multi-tenant dengan sistem organisasi
+- ✅ **Admin Panel** - Kelola users, aktivitas, organisasi, dan audit trail
+- ✅ **Profile Management** - Update profile, organisasi, ganti password, hapus akun
 - ✅ **WIB Timezone** - Semua timestamp menggunakan Waktu Indonesia Barat (UTC+7)
 - ✅ **Audit Trail** - Cassandra database untuk logging aktivitas permanen
 - ✅ **RESTful API** - Backend FastAPI dengan dokumentasi otomatis
 - ✅ **Modern Frontend** - Next.js 14 dengan TypeScript & Tailwind CSS
 - ✅ **Hybrid Database** - MongoDB untuk data operasional, Cassandra untuk audit logs
 - ✅ **Auto Database Init** - Otomatis setup MongoDB & Cassandra via Docker
+- ✅ **Advanced Search** - Search di semua data aktivitas (multi-page)
 
 ## 📋 Teknologi Stack
 
@@ -356,24 +359,95 @@ lsof -ti:3000 | xargs kill -9
 │   └── public/                # Static assets
 │
 ├── infrastructures/
-│   ├── docker-compose.yaml    # Docker setup
-│   ├── requirements.txt       # Python dependencies
-│   └── cassandra_schema.cql   # Future: Cassandra schema
+│   ├── docker-compose.yaml        # Docker setup
+│   ├── init_db.py                 # MongoDB initialization
+│   ├── init_cassandra.py          # Cassandra initialization
+│   ├── cassandra_schema.cql       # Cassandra schema
+│   ├── requirements.txt           # Python dependencies
+│   └── update_cassandra_add_organisasi.cql  # Schema update
 │
-└── .env                       # Environment variables
+└── .env                           # Environment variables
+```
+
+## 📊 Database Schema
+
+### MongoDB Collections
+
+**1. users**
+```javascript
+{
+  "_id": ObjectId,
+  "email": "user@example.com",
+  "password": "hashed_password",
+  "name": "John Doe",
+  "organisasi_id": "org_id",  // Reference to organisasi
+  "role": "user" | "admin",
+  "created_at": "ISO8601"
+}
+// Indexes: email (unique), organisasi_id
+```
+
+**2. organisasi** (NEW)
+```javascript
+{
+  "_id": ObjectId,
+  "nama": "PT Green Energy",
+  "created_at": "ISO8601",
+  "created_by": "user_id"
+}
+// Index: nama
+```
+
+**3. activity_logs**
+```javascript
+{
+  "_id": ObjectId,
+  "user_id": "user_id",
+  "activity_type": "car_petrol_medium",
+  "distance_km": 25.5,
+  "emission": 6.75,
+  "timestamp": "ISO8601",
+  "previous_hash": "sha256...",
+  "current_hash": "sha256...",
+  "is_valid": true
+}
+// Indexes: user_id + timestamp, current_hash
+```
+
+### Cassandra Tables
+
+**activity_audit**
+```cql
+CREATE TABLE activity_audit (
+    user_id text,
+    activity_time timestamp,
+    audit_id uuid,
+    action_type text,          -- LOGIN, CREATE, UPDATE, etc
+    entity text,               -- user, activity, organisasi
+    entity_id text,
+    changes map<text, text>,
+    ip_address text,
+    user_name text,            -- NEW
+    user_organisasi text,      -- NEW
+    description text,
+    PRIMARY KEY ((user_id), activity_time, audit_id)
+) WITH CLUSTERING ORDER BY (activity_time DESC);
 ```
 
 ## 🎯 Roadmap
 
 - [x] User Authentication (JWT)
 - [x] Multi-user support
+- [x] **Organisasi Management** - Multi-tenant system
 - [x] Data visualization dengan charts (Chart.js)
 - [x] Cassandra integration untuk audit log
 - [x] Docker Compose deployment
+- [x] **Advanced Search** - Search across all data pages
 - [ ] Export PDF reports
 - [ ] AI-powered recommendations
 - [ ] Mobile app (React Native)
 - [ ] Real-time notifications
+- [ ] Organisasi dashboard & analytics
 
 ## 📚 Dokumentasi
 
@@ -383,6 +457,8 @@ Dokumentasi lengkap tersedia di folder root:
 - **[QUICK_START.md](QUICK_START.md)** - Panduan cepat
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Deployment dengan Docker
 - **[FEATURES_DOCUMENTATION.md](FEATURES_DOCUMENTATION.md)** - Detail implementasi fitur
+- **[ORGANISASI_FEATURE.md](ORGANISASI_FEATURE.md)** - Dokumentasi fitur organisasi
+- **[ADMIN_ORGANISASI_DOCUMENTATION.md](ADMIN_ORGANISASI_DOCUMENTATION.md)** - Admin panel organisasi
 - **[API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md)** - API reference
 - **[INTEGRATION_SUCCESS.md](INTEGRATION_SUCCESS.md)** - Test results
 
