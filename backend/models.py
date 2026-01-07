@@ -109,6 +109,34 @@ class TokenResponse(BaseModel):
         }
 
 
+class ProfileUpdate(BaseModel):
+    """Model untuk update profil user."""
+    name: str = Field(..., min_length=2, description="Nama lengkap user")
+    email: EmailStr = Field(..., description="Email user")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "John Doe Updated",
+                "email": "newemail@example.com"
+            }
+        }
+
+
+class PasswordChange(BaseModel):
+    """Model untuk ubah password."""
+    current_password: str = Field(..., description="Password saat ini")
+    new_password: str = Field(..., min_length=6, description="Password baru minimal 6 karakter")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "current_password": "oldpassword123",
+                "new_password": "newpassword123"
+            }
+        }
+
+
 # =============================================================================
 # MODEL REQUEST: Untuk Menerima Data dari Client
 # =============================================================================

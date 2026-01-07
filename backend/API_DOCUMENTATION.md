@@ -72,6 +72,102 @@ POST /api/auth/login
 }
 ```
 
+### Get Current User
+```http
+GET /api/auth/me
+```
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response:**
+```json
+{
+  "id": "507f1f77bcf86cd799439011",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "user"
+}
+```
+
+### Update Profile
+```http
+PUT /api/auth/profile
+```
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "name": "John Doe Updated",
+  "email": "newemail@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "507f1f77bcf86cd799439011",
+  "email": "newemail@example.com",
+  "name": "John Doe Updated",
+  "role": "user"
+}
+```
+
+### Change Password
+```http
+PUT /api/auth/change-password
+```
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "current_password": "oldpassword123",
+  "new_password": "newpassword456"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Password berhasil diubah"
+}
+```
+
+### Delete Account
+```http
+DELETE /api/auth/delete-account
+```
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response:**
+```json
+{
+  "message": "Akun berhasil dihapus",
+  "deleted_activities": 30
+}
+```
+
+**Note:** 
+- Menghapus user dan semua aktivitas dari MongoDB
+- Audit logs di Cassandra tetap dipertahankan untuk compliance
+- Tidak dapat diundo
+
 ### Using Authentication
 
 Semua protected endpoints memerlukan header:

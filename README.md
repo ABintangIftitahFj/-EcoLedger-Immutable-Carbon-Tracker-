@@ -8,10 +8,13 @@ Sistem pelacak jejak karbon dengan integritas blockchain-like menggunakan Climat
 - ✅ **Hash Chain Blockchain-like** - Data immutable dan terverifikasi
 - ✅ **Real-time Dashboard** - Monitoring jejak karbon dengan grafik interaktif
 - ✅ **User Authentication** - JWT-based authentication dengan role management
-- ✅ **Audit Trail** - Cassandra database untuk logging aktivitas
+- ✅ **Profile Management** - Update profile, ganti password, hapus akun
+- ✅ **WIB Timezone** - Semua timestamp menggunakan Waktu Indonesia Barat (UTC+7)
+- ✅ **Audit Trail** - Cassandra database untuk logging aktivitas permanen
 - ✅ **RESTful API** - Backend FastAPI dengan dokumentasi otomatis
 - ✅ **Modern Frontend** - Next.js 14 dengan TypeScript & Tailwind CSS
 - ✅ **Hybrid Database** - MongoDB untuk data operasional, Cassandra untuk audit logs
+- ✅ **Auto Database Init** - Otomatis setup MongoDB & Cassandra via Docker
 
 ## 📋 Teknologi Stack
 
@@ -89,9 +92,19 @@ docker-compose up -d
 
 Ini akan menjalankan:
 - ✅ **MongoDB** (port 27017) - Database utama
-- ✅ **Cassandra** (port 9042) - Audit trail database
+- ✅ **Cassandra** (port 9042) - Audit trail database  
+- ✅ **Mongo Express** (port 8081) - MongoDB Web GUI
 - ✅ **Backend** (port 8000) - FastAPI server
 - ✅ **Frontend** (port 3000) - Next.js application
+- ✅ **DB Init** (one-time) - Auto initialize MongoDB & Cassandra
+
+**Database Initialization:**
+Container `db-init` akan otomatis:
+1. Membuat collections dan indexes di MongoDB
+2. Membuat user admin default (admin@ecoledger.com)
+3. Membuat keyspace `eco_logs` di Cassandra
+4. Membuat table `activity_audit` untuk audit trail
+5. Exit setelah selesai (tidak berjalan terus)
 
 **Opsi Manual (Development):**
 Jika ingin run manual tanpa Docker, pastikan MongoDB dan Cassandra sudah running:
@@ -153,9 +166,21 @@ Frontend akan berjalan di: **http://localhost:3000**
 
 ### 1. Register & Login
 Buka browser dan kunjungi `http://localhost:3000`
+
+**Test Users (untuk development):**
+Gunakan salah satu akun test berikut:
+```
+Email: budi.santoso@ecoledger.com     Password: budi123
+Email: siti.nurhaliza@ecoledger.com   Password: siti123
+Email: rina.permata@ecoledger.com     Password: rina123
+Email: dedi.kurniawan@ecoledger.com   Password: dedi123
+Email: admin@ecoledger.com            Password: admin123 (Admin role)
+```
+
+Atau:
 - Klik **"Register"** untuk membuat akun baru
 - Login dengan email dan password
-- Anda akan mendapat JWT token yang tersimpan di localStorage
+- JWT token tersimpan di localStorage untuk autentikasi
 
 ### 2. Akses Dashboard
 Setelah login, Anda akan diarahkan ke dashboard yang menampilkan:
@@ -163,6 +188,16 @@ Setelah login, Anda akan diarahkan ke dashboard yang menampilkan:
 - 🥧 **Grafik Sumber Polusi** - Pie chart kategori emisi
 - 📋 **Audit Log Table** - Riwayat aktivitas dari Cassandra
 - 🔐 **Hash Chain Verification** - Status integritas data
+- ⏰ **Timezone WIB** - Semua waktu ditampilkan dalam WIB (UTC+7)
+
+### 2.1. Kelola Profil (Pengaturan)
+Di halaman **"Pengaturan"**, Anda dapat:
+- ✏️ **Update Profile** - Ubah nama dan email (langsung sync ke dashboard)
+- 🔑 **Ganti Password** - Ubah password dengan verifikasi password lama
+- 🗑️ **Hapus Akun** - Hapus akun dan semua data (audit log tetap tersimpan)
+  - Konfirmasi ganda untuk keamanan
+  - Data operasional dihapus dari MongoDB
+  - Audit trail tetap di Cassandra untuk compliance
 
 ### 3. Catat Aktivitas
 - Navigasi ke **"Catat Aktivitas"**

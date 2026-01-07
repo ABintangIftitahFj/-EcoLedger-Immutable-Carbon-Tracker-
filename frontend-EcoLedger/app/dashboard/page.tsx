@@ -28,27 +28,60 @@ export default function Dashboard() {
   const [auditLogs, setAuditLogs] = useState([])        // State untuk log
   // Get user from localStorage and setup API token
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    const token = localStorage.getItem("access_token")
-    
-    if (!storedUser || !token) {
-      router.push("/login")
-      return
+    const loadUserData = () => {
+      const storedUser = localStorage.getItem("user")
+      const token = localStorage.getItem("access_token")
+      
+      if (!storedUser || !token) {
+        router.push("/login")
+        return
+      }
+
+      try {
+        const userData = JSON.parse(storedUser)
+        setUser(userData)
+        
+        // ✅ PENTING: Set token SETIAP KALI component mount
+        apiClient.setAuthToken(token)
+        
+        console.log("Token set:", token.substring(0, 20) + "...") // Debug log
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+        localStorage.removeItem("user")
+        localStorage.removeItem("access_token")
+        router.push("/login")
+      }
     }
 
-    try {
-      const userData = JSON.parse(storedUser)
-      setUser(userData)
-      
-      // ✅ PENTING: Set token SETIAP KALI component mount
-      apiClient.setAuthToken(token)
-      
-      console.log("Token set:", token.substring(0, 20) + "...") // Debug log
-    } catch (error) {
-      console.error("Error parsing user data:", error)
-      localStorage.removeItem("user")
-      localStorage.removeItem("access_token")
-      router.push("/login")
+    // Load initial data
+    loadUserData()
+
+    // Listen for storage changes (when user updates profile in another tab/page)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'access_token') {
+        loadUserData()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Also reload user data when window regains focus (e.g., coming back from settings)
+    const handleFocus = () => {
+      loadUserData()
+    }
+    
+    // Listen for custom profile update event
+    const handleProfileUpdate = () => {
+      loadUserData()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('userProfileUpdated', handleProfileUpdate)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate)
     }
   }, [router])
 

@@ -13,9 +13,12 @@ Table: activity_audit
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional
 import logging
+
+# Timezone WIB (UTC+7)
+WIB = timezone(timedelta(hours=7))
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +80,7 @@ def log_audit(
             return False
         
         audit_id = uuid.uuid4()
-        activity_time = datetime.utcnow()
+        activity_time = datetime.now(WIB)
         
         # Prepare changes map
         changes_map = changes or {}
@@ -150,9 +153,23 @@ def get_audit_logs(
         
         results = []
         for row in rows:
+            # Convert UTC timestamp to WIB
+            activity_time_wib = None
+            if row.activity_time:
+                # Cassandra returns timezone-aware datetime in UTC
+                # Convert to WIB by replacing timezone
+                if row.activity_time.tzinfo is None:
+                    # If somehow no timezone, assume UTC
+                    from datetime import timezone as tz
+                    activity_time_utc = row.activity_time.replace(tzinfo=tz.utc)
+                else:
+                    activity_time_utc = row.activity_time
+                # Convert to WIB
+                activity_time_wib = activity_time_utc.astimezone(WIB).isoformat()
+            
             results.append({
                 "user_id": row.user_id,
-                "activity_time": row.activity_time.isoformat() if row.activity_time else None,
+                "activity_time": activity_time_wib,
                 "audit_id": str(row.audit_id),
                 "action_type": row.action_type,
                 "entity": row.entity,
