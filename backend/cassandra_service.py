@@ -141,12 +141,14 @@ def get_audit_logs(
             """
             rows = session.execute(query, (user_id,))
         else:
-            # Note: In production, you'd need a secondary table or allow filtering
+            # Ambil lebih banyak data untuk memastikan semua log terbaru terambil
+            # Karena tidak bisa ORDER BY tanpa partition key, ambil data lebih banyak
+            fetch_limit = limit * 10  # Ambil 10x lebih banyak
             query = f"""
             SELECT user_id, activity_time, audit_id, action_type, entity, entity_id, 
                    changes, ip_address, description 
             FROM activity_audit 
-            LIMIT {limit}
+            LIMIT {fetch_limit}
             ALLOW FILTERING
             """
             rows = session.execute(query)
@@ -170,6 +172,7 @@ def get_audit_logs(
             results.append({
                 "user_id": row.user_id,
                 "activity_time": activity_time_wib,
+                "activity_time_raw": row.activity_time,  # Untuk sorting
                 "audit_id": str(row.audit_id),
                 "action_type": row.action_type,
                 "entity": row.entity,
@@ -179,7 +182,14 @@ def get_audit_logs(
                 "description": row.description
             })
         
-        return results
+        # Sort by activity_time descending (terbaru dulu)
+        results.sort(key=lambda x: x.get('activity_time_raw') or datetime.min, reverse=True)
+        
+        # Remove raw timestamp dan ambil sesuai limit
+        for item in results[:limit]:
+            item.pop('activity_time_raw', None)
+        
+        return results[:limit]
         
     except Exception as e:
         logger.error(f"Failed to get audit logs: {e}")

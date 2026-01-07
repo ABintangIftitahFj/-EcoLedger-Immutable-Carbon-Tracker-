@@ -36,7 +36,7 @@ export default function AuditTrailPage() {
             const token = localStorage.getItem('access_token')
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-            const response = await fetch(`${baseUrl}/api/admin/audit-logs?limit=100`, {
+            const response = await fetch(`${baseUrl}/api/admin/audit-logs?limit=500`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

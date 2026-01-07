@@ -1083,7 +1083,7 @@ async def get_admin_stats(
 )
 async def get_audit_trail(
     user_id: str = Query(None, description="Filter by user ID"),
-    limit: int = Query(100, ge=1, le=500, description="Jumlah maksimal record"),
+    limit: int = Query(500, ge=1, le=1000, description="Jumlah maksimal record"),
     current_user: TokenData = Depends(require_admin)
 ):
     """
